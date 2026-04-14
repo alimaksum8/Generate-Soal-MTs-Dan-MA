@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-950: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-400: #94a3b8;
+  --color-slate-300: #cbd5e1;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-300 antialiased lg:overflow-hidden min-h-screen lg:h-screen;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply flex flex-col h-full min-h-screen lg:min-h-0 p-4 lg:p-6;
+  }
+
+  .main-grid {
+    @apply flex flex-col lg:grid lg:grid-cols-[320px_1fr] gap-6 flex-1 min-h-0;
+  }
+
+  .sidebar {
+    @apply bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-4 lg:overflow-y-auto;
+  }
+
+  .preview-container {
+    @apply bg-slate-100 rounded-lg p-4 lg:p-8 relative lg:h-full min-h-[600px] lg:min-h-0 text-black shadow-[inset_0_0_40px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden;
+  }
+
+  .paper-content {
+    @apply bg-white p-6 lg:p-10 flex-1 border border-slate-200 font-serif shadow-2xl overflow-y-auto min-h-0;
+  }
+
+  .input-field {
+    @apply bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-50 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all;
+  }
+
+  .btn-toggle-group {
+    @apply grid grid-cols-2 bg-slate-950 rounded-lg p-1;
+  }
+
+  .btn-toggle {
+    @apply rounded-md py-1.5 text-xs font-medium transition-all text-slate-400 hover:text-slate-200;
+  }
+
+  .btn-toggle.active {
+    @apply bg-blue-600 text-white shadow-sm;
+  }
+
+  .stats-card {
+    @apply bg-slate-950/40 border border-slate-700 rounded-xl p-3 flex flex-col gap-2;
+  }
+
+  .stat-row {
+    @apply flex justify-between items-center text-[11px] font-semibold uppercase tracking-wider;
+  }
+
+  .stat-input {
+    @apply w-12 bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500;
+  }
+
+  .btn-generate {
+    @apply mt-auto bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-3.5 font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_6px_-1px_rgba(37,99,235,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .print-badge {
+    @apply absolute bottom-5 right-5 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 text-sm transition-all shadow-lg active:scale-[0.98];
+  }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #exam-paper, #exam-paper * { visibility: visible; }
+  #exam-paper { 
+    position: absolute; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: auto;
+    border: none; 
+    padding: 0;
+    box-shadow: none;
+  }
+  .preview-container { padding: 0; background: white; }
+}

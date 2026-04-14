@@ -1,0 +1,6 @@
+{
+  "name": "Generator Soal Madrasah",
+  "description": "A tool to generate Madrasah exam questions using AI, supporting multiple levels (MTs/MA) and question types (HOTS, Sedang, LOTS).",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
