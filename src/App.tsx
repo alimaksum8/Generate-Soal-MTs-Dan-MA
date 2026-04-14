@@ -33,7 +33,7 @@ const App = () => {
   const [academicYear, setAcademicYear] = useState('2024/2025');
   const [institutionHeader, setInstitutionHeader] = useState('KEMENTERIAN AGAMA REPUBLIK INDONESIA');
   const [subject, setSubject] = useState('');
-  const [grade, setGrade] = useState('VII');
+  const [grade, setGrade] = useState('');
   const [examDay, setExamDay] = useState('');
   const [examDate, setExamDate] = useState('');
   const [logo, setLogo] = useState(null);
@@ -62,11 +62,6 @@ const App = () => {
   const [generatedExam, setGeneratedExam] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (level === 'MTs') setGrade('VII');
-    else setGrade('X');
-  }, [level]);
-
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -84,8 +79,8 @@ const App = () => {
     const activeTopics = Object.values(topics).filter((t): t is string => typeof t === 'string' && t.trim() !== '');
     const hasEnabledType = Object.values(enabledTypes).some(v => v);
     
-    if (!subject || activeTopics.length === 0) {
-      setError("Mohon isi Mata Pelajaran dan minimal satu Materi.");
+    if (!subject || activeTopics.length === 0 || !grade) {
+      setError("Mohon isi Mata Pelajaran, Kelas, dan minimal satu Materi.");
       return;
     }
 
@@ -123,7 +118,7 @@ const App = () => {
     if (enabledTypes.salahBenar) {
       outputFormat += `,
       "salah_benar": [
-        { "no": 1, "pertanyaan": "...", "kunci": "Benar" }
+        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "...", "kunci": "Benar" }
       ]`;
     }
 
@@ -131,7 +126,7 @@ const App = () => {
       outputFormat += `,
       "menjodohkan": {
         "soal": [
-          { "no": 1, "pertanyaan": "...", "kunci": "..." }
+          { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "...", "kunci": "..." }
         ],
         "pilihan_jawaban": ["...", "...", "..."]
       }`;
@@ -140,11 +135,20 @@ const App = () => {
     if (enabledTypes.essay) {
       outputFormat += `,
       "essay": [
-        { "no": 1, "pertanyaan": "..." }
+        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "..." }
       ]`;
     }
 
-    outputFormat += `
+    outputFormat += `,
+      "kisi_kisi": [
+        { "no": 1, "materi": "...", "indikator": "...", "level_kognitif": "...", "bentuk_soal": "Pilihan Ganda/Salah Benar/Menjodohkan/Essay" }
+      ],
+      "kunci_jawaban_lengkap": {
+        "pg": "1.A, 2.B, ...",
+        "sb": "1.Benar, 2.Salah, ...",
+        "jodoh": "1-A, 2-C, ...",
+        "essay": "1. Jawaban essay..., 2. Jawaban essay..."
+      }
     }`;
 
     let criteria = `
@@ -164,14 +168,17 @@ const App = () => {
     countsText += countsParts.join(', ') + '.';
 
     const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (Kementerian Agama RI). 
-    Tugas Anda adalah membuat naskah soal yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
+    Tugas Anda adalah membuat naskah soal, kisi-kisi, dan kunci jawaban yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
 
     ${criteria}
+
+    PENTING: Penempatan soal HOTS dan Sedang harus diacak nomornya (jangan dikelompokkan di awal atau di akhir). Sebarkan tingkat kesulitan secara merata di seluruh nomor soal.
 
     FORMAT OUTPUT (JSON):
     ${outputFormat}
 
-    ${countsText}.`;
+    ${countsText}. 
+    PENTING: Buatlah Kisi-kisi soal yang mencakup SEMUA butir soal yang dibuat (Pilihan Ganda, Salah/Benar, Menjodohkan, dan Essay) dengan nomor urut yang sesuai. Kunci jawaban harus lengkap untuk semua bagian.`;
 
     const userQuery = `Buatlah naskah soal ujian untuk mata pelajaran ${subject} kelas ${grade} ${level}. Materi utama: ${topicsString}.`;
 
@@ -197,6 +204,7 @@ const App = () => {
         if (content.salah_benar) content.salah_benar.sort((a: any, b: any) => a.no - b.no);
         if (content.menjodohkan?.soal) content.menjodohkan.soal.sort((a: any, b: any) => a.no - b.no);
         if (content.essay) content.essay.sort((a: any, b: any) => a.no - b.no);
+        if (content.kisi_kisi) content.kisi_kisi.sort((a: any, b: any) => a.no - b.no);
         setGeneratedExam(content);
         setLoading(false);
       } catch (err: any) {
@@ -271,8 +279,9 @@ const App = () => {
             <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>
-            <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Madrasah Exam Studio</h1>
+            <h1 className="text-2xl font-bold text-slate-50 tracking-tight">MADRASAH DARUL HUDA</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Professional Production Grade</p>
+            <p className="text-[9px] text-blue-400/80 uppercase tracking-wider font-bold mt-0.5">Developer: Ali Maksum</p>
         </div>
       </header>
 
@@ -421,6 +430,7 @@ const App = () => {
                     </div>
                   )}
                   <div className="flex-1">
+                    <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
                     <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
                     <h3 className="font-bold uppercase text-xl leading-tight">
                       {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
@@ -475,9 +485,18 @@ const App = () => {
                         <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">II. SALAH / BENAR</div>
                         <div className="space-y-3">
                             {generatedExam.salah_benar.map((it: any, i: number) => (
-                                <div key={i} className="flex gap-2 text-[11.5px] break-inside-avoid mb-2">
-                                    <span className="font-bold">{it.no}.</span>
-                                    <p>{it.pertanyaan} (S/B)</p>
+                                <div key={i} className="break-inside-avoid mb-4">
+                                    {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
+                                      <div className="flex justify-end mb-1">
+                                        <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
+                                            {it.tipe}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex gap-2 text-[11.5px]">
+                                        <span className="font-bold">{it.no}.</span>
+                                        <p>{it.pertanyaan} (S/B)</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -490,10 +509,19 @@ const App = () => {
                         <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-3">
                               {generatedExam.menjodohkan.soal.map((it: any, i: number) => (
-                                  <div key={i} className="flex gap-2 text-[11.5px] break-inside-avoid mb-2">
-                                      <span className="font-bold">{it.no}.</span>
-                                      <p className="flex-1 border-b border-dotted border-black/40 pb-1">{it.pertanyaan}</p>
-                                      <span className="min-w-[80px] border-b border-black text-center"></span>
+                                  <div key={i} className="break-inside-avoid mb-4">
+                                      {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
+                                        <div className="flex justify-end mb-1">
+                                          <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
+                                              {it.tipe}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2 text-[11.5px]">
+                                          <span className="font-bold">{it.no}.</span>
+                                          <p className="flex-1 border-b border-dotted border-black/40 pb-1">{it.pertanyaan}</p>
+                                          <span className="min-w-[80px] border-b border-black text-center"></span>
+                                      </div>
                                   </div>
                               ))}
                           </div>
@@ -517,17 +545,84 @@ const App = () => {
                       <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">IV. URAIAN / ESSAY</div>
                       <div className="space-y-5">
                         {generatedExam.essay.map((it: any, i: number) => (
-                          <div key={i} className="flex gap-2 text-[11.5px] break-inside-avoid mb-4">
-                            <span className="font-bold min-w-[18px]">{i+1}.</span>
-                            <div className="flex-1">
-                                <p className="font-semibold leading-snug">{it.pertanyaan}</p>
-                                <div className="mt-4 border-b border-dotted border-black/30 h-4 w-full"></div>
+                          <div key={i} className="break-inside-avoid mb-4">
+                            {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
+                              <div className="flex justify-end mb-1">
+                                <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
+                                    {it.tipe}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex gap-2 text-[11.5px]">
+                              <span className="font-bold min-w-[18px]">{it.no}.</span>
+                              <div className="flex-1">
+                                  <p className="font-semibold leading-snug">{it.pertanyaan}</p>
+                                  <div className="mt-4 border-b border-dotted border-black/30 h-4 w-full"></div>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Page Kisi-kisi */}
+                <div className="mt-10 pt-10 border-t-4 border-double border-black break-before-page">
+                  <h2 className="text-center font-bold text-lg mb-6 uppercase">KISI-KISI SOAL {subject}</h2>
+                  <table className="w-full border-collapse border-2 border-black text-[10px]">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="border border-black p-2 w-8">No</th>
+                        <th className="border border-black p-2">Materi</th>
+                        <th className="border border-black p-2">Indikator Soal</th>
+                        <th className="border border-black p-2 w-20">Level</th>
+                        <th className="border border-black p-2 w-24">Bentuk Soal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {generatedExam.kisi_kisi?.map((k: any, idx: number) => (
+                        <tr key={idx}>
+                          <td className="border border-black p-2 text-center">{k.no}</td>
+                          <td className="border border-black p-2">{k.materi}</td>
+                          <td className="border border-black p-2">{k.indikator}</td>
+                          <td className="border border-black p-2 text-center">{k.level_kognitif}</td>
+                          <td className="border border-black p-2 text-center">{k.bentuk_soal}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Page Kunci Jawaban */}
+                <div className="mt-10 pt-10 border-t-4 border-double border-black break-before-page">
+                  <h2 className="text-center font-bold text-lg mb-6 uppercase">KUNCI JAWABAN {subject}</h2>
+                  <div className="grid grid-cols-1 gap-6 text-[11px]">
+                    {generatedExam.kunci_jawaban_lengkap?.pg && (
+                      <div className="border border-black p-4 rounded bg-slate-50">
+                        <h3 className="font-bold mb-2 border-b border-black pb-1">I. PILIHAN GANDA</h3>
+                        <p className="leading-relaxed">{generatedExam.kunci_jawaban_lengkap.pg}</p>
+                      </div>
+                    )}
+                    {generatedExam.kunci_jawaban_lengkap?.sb && (
+                      <div className="border border-black p-4 rounded bg-slate-50">
+                        <h3 className="font-bold mb-2 border-b border-black pb-1">II. SALAH / BENAR</h3>
+                        <p className="leading-relaxed">{generatedExam.kunci_jawaban_lengkap.sb}</p>
+                      </div>
+                    )}
+                    {generatedExam.kunci_jawaban_lengkap?.jodoh && (
+                      <div className="border border-black p-4 rounded bg-slate-50">
+                        <h3 className="font-bold mb-2 border-b border-black pb-1">III. MENJODOHKAN</h3>
+                        <p className="leading-relaxed">{generatedExam.kunci_jawaban_lengkap.jodoh}</p>
+                      </div>
+                    )}
+                    {generatedExam.kunci_jawaban_lengkap?.essay && (
+                      <div className="border border-black p-4 rounded bg-slate-50">
+                        <h3 className="font-bold mb-2 border-b border-black pb-1">IV. URAIAN / ESSAY</h3>
+                        <p className="whitespace-pre-wrap leading-relaxed">{generatedExam.kunci_jawaban_lengkap.essay}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               </>

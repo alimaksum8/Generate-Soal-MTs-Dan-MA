@@ -158,6 +158,10 @@
     width: 100% !important;
   }
 
+  .break-before-page {
+    break-before: page !important;
+  }
+
   .break-inside-avoid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
