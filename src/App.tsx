@@ -377,20 +377,6 @@ const App = () => {
                   )}
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-black/10 flex justify-between text-[11px] italic break-inside-avoid">
-                    <div className="text-center w-40">
-                        <p>Mengetahui,</p>
-                        <p>Kepala Madrasah</p>
-                        <div className="h-16"></div>
-                        <p className="font-bold underline">( ________________ )</p>
-                    </div>
-                    <div className="text-center w-40">
-                        <p>Bondowoso, {examDate || '..........'}</p>
-                        <p>Guru Mata Pelajaran</p>
-                        <div className="h-16"></div>
-                        <p className="font-bold underline">( ________________ )</p>
-                    </div>
-                </div>
               </>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-300">

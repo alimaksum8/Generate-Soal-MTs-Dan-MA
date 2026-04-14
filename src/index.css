@@ -89,17 +89,54 @@
 }
 
 @media print {
-  body * { visibility: hidden; }
-  #exam-paper, #exam-paper * { visibility: visible; }
-  #exam-paper { 
-    position: absolute; 
-    left: 0; 
-    top: 0; 
-    width: 100%; 
-    height: auto;
-    border: none; 
-    padding: 0;
-    box-shadow: none;
+  @page {
+    margin: 1.5cm;
+    size: A4;
   }
-  .preview-container { padding: 0; background: white; }
+
+  body {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .app-container, .main-grid, .sidebar, header {
+    display: none !important;
+  }
+
+  .preview-container {
+    display: block !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: static !important;
+  }
+
+  .paper-content {
+    display: block !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .columns-2 {
+    column-count: 2 !important;
+    column-gap: 1.5cm !important;
+    column-rule: 1px solid #000 !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .absolute.bottom-8.right-8 {
+    display: none !important;
+  }
 }
