@@ -284,8 +284,11 @@ const App = () => {
                   )}
                   <div className="flex-1">
                     <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
-                    <p className="text-[10px] font-medium mt-1">Alamat: Jl. Raya Pendidikan No. 123, Bondowoso, Jawa Timur</p>
+                    <h3 className="font-bold uppercase text-xl leading-tight">
+                      {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
+                    </h3>
                     <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
+                    <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                   </div>
                 </div>
 

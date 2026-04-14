@@ -152,10 +152,15 @@
     column-count: 2 !important;
     column-gap: 1cm !important;
     column-rule: 1px solid #000 !important;
+    column-fill: auto !important; /* Mencegah browser mencoba menyeimbangkan tinggi kolom yang bikin celah */
+    display: block !important;
+    height: auto !important;
   }
 
   .break-inside-avoid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    display: block !important; /* Memastikan elemen soal tetap utuh */
+    margin-bottom: 1rem !important;
   }
 }
