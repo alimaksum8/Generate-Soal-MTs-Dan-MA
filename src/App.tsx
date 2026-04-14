@@ -129,9 +129,12 @@ const App = () => {
 
     if (enabledTypes.menjodohkan) {
       outputFormat += `,
-      "menjodohkan": [
-        { "no": 1, "pertanyaan": "...", "jawaban": "..." }
-      ]`;
+      "menjodohkan": {
+        "soal": [
+          { "no": 1, "pertanyaan": "...", "kunci": "..." }
+        ],
+        "pilihan_jawaban": ["...", "...", "..."]
+      }`;
     }
 
     if (enabledTypes.essay) {
@@ -191,7 +194,9 @@ const App = () => {
         const content = JSON.parse(data.candidates[0].content.parts[0].text);
         
         if (content.pilihan_ganda) content.pilihan_ganda.sort((a: any, b: any) => a.no - b.no);
-        
+        if (content.salah_benar) content.salah_benar.sort((a: any, b: any) => a.no - b.no);
+        if (content.menjodohkan?.soal) content.menjodohkan.soal.sort((a: any, b: any) => a.no - b.no);
+        if (content.essay) content.essay.sort((a: any, b: any) => a.no - b.no);
         setGeneratedExam(content);
         setLoading(false);
       } catch (err: any) {
@@ -301,7 +306,16 @@ const App = () => {
 
               <div className="grid grid-cols-2 gap-2">
                   <input type="text" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} placeholder="Tahun Ajaran" className="input-field" />
-                  <input type="text" value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Kelas" className="input-field" />
+                  <select 
+                    value={grade} 
+                    onChange={(e) => setGrade(e.target.value)} 
+                    className="input-field appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Pilih Kelas</option>
+                    {['VII', 'VIII', 'IX', 'X', 'XI', 'XII'].map(g => (
+                      <option key={g} value={g} className="bg-slate-900 text-white">{g}</option>
+                    ))}
+                  </select>
               </div>
 
               <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mata Pelajaran" className="input-field font-bold" />
@@ -470,16 +484,30 @@ const App = () => {
                     </div>
                   )}
 
-                  {generatedExam.menjodohkan?.length > 0 && (
+                  {generatedExam.menjodohkan?.soal?.length > 0 && (
                     <div className="mb-6">
                         <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">III. MENJODOHKAN</div>
-                        <div className="space-y-3">
-                            {generatedExam.menjodohkan.map((it: any, i: number) => (
-                                <div key={i} className="flex gap-2 text-[11.5px] break-inside-avoid mb-2">
-                                    <span className="font-bold">{it.no}.</span>
-                                    <p>{it.pertanyaan} ............</p>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-3">
+                              {generatedExam.menjodohkan.soal.map((it: any, i: number) => (
+                                  <div key={i} className="flex gap-2 text-[11.5px] break-inside-avoid mb-2">
+                                      <span className="font-bold">{it.no}.</span>
+                                      <p className="flex-1 border-b border-dotted border-black/40 pb-1">{it.pertanyaan}</p>
+                                      <span className="min-w-[80px] border-b border-black text-center"></span>
+                                  </div>
+                              ))}
+                          </div>
+                          <div className="bg-slate-50 border border-black p-3 rounded">
+                            <p className="text-[10px] font-bold mb-2 uppercase border-b border-black/20 pb-1">Pilihan Jawaban:</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10.5px]">
+                              {generatedExam.menjodohkan.pilihan_jawaban?.map((choice: string, idx: number) => (
+                                <p key={idx} className="flex gap-2">
+                                  <span className="font-bold">{String.fromCharCode(65 + idx)}.</span>
+                                  <span>{choice}</span>
+                                </p>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                     </div>
                   )}
