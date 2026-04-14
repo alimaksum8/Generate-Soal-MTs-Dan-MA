@@ -52,6 +52,12 @@ const App = () => {
     menjodohkan: 5,
     essay: 2
   });
+  const [enabledTypes, setEnabledTypes] = useState({
+    pilihanGanda: true,
+    salahBenar: true,
+    menjodohkan: true,
+    essay: true
+  });
   const [loading, setLoading] = useState(false);
   const [generatedExam, setGeneratedExam] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,9 +82,15 @@ const App = () => {
 
   const handleGenerate = async () => {
     const activeTopics = Object.values(topics).filter((t): t is string => typeof t === 'string' && t.trim() !== '');
+    const hasEnabledType = Object.values(enabledTypes).some(v => v);
     
     if (!subject || activeTopics.length === 0) {
       setError("Mohon isi Mata Pelajaran dan minimal satu Materi.");
+      return;
+    }
+
+    if (!hasEnabledType) {
+      setError("Mohon pilih minimal satu jenis soal (PG, S/B, Jodoh, atau Essay).");
       return;
     }
 
@@ -88,21 +100,14 @@ const App = () => {
     const topicsString = activeTopics.join(', ');
     const isMA = level === 'MA';
 
-    const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (Kementerian Agama RI). 
-    Tugas Anda adalah membuat naskah soal yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
-
-    KRITERIA SOAL:
-    1. Bahasa: Gunakan Bahasa Indonesia yang baku, formal, dan mudah dipahami.
-    2. Konten: Harus relevan dengan materi ${topicsString} untuk jenjang ${level} kelas ${grade}.
-    3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
-    4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).
-
-    FORMAT OUTPUT (JSON):
-    {
+    let outputFormat = `{
       "kop": { 
         "lembaga": "${institutionHeader}", 
         "tahun_ajaran": "${academicYear}"
-      },
+      }`;
+
+    if (enabledTypes.pilihanGanda) {
+      outputFormat += `,
       "pilihan_ganda": [
         {
           "no": 1, 
@@ -112,19 +117,58 @@ const App = () => {
           "opsi": {"a": "", "b": "", "c": "", "d": "" ${isMA ? ', "e": ""' : ''}}, 
           "kunci": "a"
         }
-      ],
-      "salah_benar": [
-        { "no": 1, "pertanyaan": "...", "kunci": "Benar" }
-      ],
-      "menjodohkan": [
-        { "no": 1, "pertanyaan": "...", "jawaban": "..." }
-      ],
-      "essay": [
-        { "no": 1, "pertanyaan": "..." }
-      ]
+      ]`;
     }
 
-    PENTING: Hasilkan tepat ${counts.pilihanGanda} soal PG (${counts.hots} HOTS, ${counts.sedang} Sedang), ${counts.salahBenar} soal Salah/Benar, ${counts.menjodohkan} soal Menjodohkan, dan ${counts.essay} soal Essay.`;
+    if (enabledTypes.salahBenar) {
+      outputFormat += `,
+      "salah_benar": [
+        { "no": 1, "pertanyaan": "...", "kunci": "Benar" }
+      ]`;
+    }
+
+    if (enabledTypes.menjodohkan) {
+      outputFormat += `,
+      "menjodohkan": [
+        { "no": 1, "pertanyaan": "...", "jawaban": "..." }
+      ]`;
+    }
+
+    if (enabledTypes.essay) {
+      outputFormat += `,
+      "essay": [
+        { "no": 1, "pertanyaan": "..." }
+      ]`;
+    }
+
+    outputFormat += `
+    }`;
+
+    let criteria = `
+    KRITERIA SOAL:
+    1. Bahasa: Gunakan Bahasa Indonesia yang baku, formal, dan mudah dipahami.
+    2. Konten: Harus relevan dengan materi ${topicsString} untuk jenjang ${level} kelas ${grade}.
+    3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
+    4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).`;
+
+    let countsText = `PENTING: `;
+    const countsParts = [];
+    if (enabledTypes.pilihanGanda) countsParts.push(`Hasilkan tepat ${counts.pilihanGanda} soal PG (${counts.hots} HOTS, ${counts.sedang} Sedang)`);
+    if (enabledTypes.salahBenar) countsParts.push(`${counts.salahBenar} soal Salah/Benar`);
+    if (enabledTypes.menjodohkan) countsParts.push(`${counts.menjodohkan} soal Menjodohkan`);
+    if (enabledTypes.essay) countsParts.push(`${counts.essay} soal Essay`);
+    
+    countsText += countsParts.join(', ') + '.';
+
+    const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (Kementerian Agama RI). 
+    Tugas Anda adalah membuat naskah soal yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
+
+    ${criteria}
+
+    FORMAT OUTPUT (JSON):
+    ${outputFormat}
+
+    ${countsText}.`;
 
     const userQuery = `Buatlah naskah soal ujian untuk mata pelajaran ${subject} kelas ${grade} ${level}. Materi utama: ${topicsString}.`;
 
@@ -278,30 +322,62 @@ const App = () => {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Parameter Soal</p>
               <div className="stats-card">
                 <div className="stat-row text-blue-400">
-                  <span>Total Pilihan Ganda</span>
-                  <input type="number" value={counts.pilihanGanda} onChange={(e) => setCounts({...counts, pilihanGanda: parseInt(e.target.value) || 0})} className="stat-input" />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={enabledTypes.pilihanGanda} 
+                      onChange={(e) => setEnabledTypes({...enabledTypes, pilihanGanda: e.target.checked})}
+                      className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
+                    />
+                    <span>Total Pilihan Ganda</span>
+                  </label>
+                  <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.pilihanGanda} onChange={(e) => setCounts({...counts, pilihanGanda: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
                 </div>
                 <div className="stat-row text-amber-400">
                   <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Target HOTS</span>
-                  <input type="number" value={counts.hots} onChange={(e) => setCounts({...counts, hots: parseInt(e.target.value) || 0})} className="stat-input" />
+                  <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.hots} onChange={(e) => setCounts({...counts, hots: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
                 </div>
                 <div className="stat-row text-emerald-400">
                   <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> Target Sedang</span>
-                  <input type="number" value={counts.sedang} onChange={(e) => setCounts({...counts, sedang: parseInt(e.target.value) || 0})} className="stat-input" />
+                  <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.sedang} onChange={(e) => setCounts({...counts, sedang: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
                 </div>
                 <div className="h-px bg-slate-700 my-1"></div>
                 <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col gap-1">
-                        <label className="text-[8px] text-slate-500 text-center uppercase">S/B</label>
-                        <input type="number" value={counts.salahBenar} onChange={(e) => setCounts({...counts, salahBenar: parseInt(e.target.value) || 0})} className="stat-input w-full" />
+                        <label className="text-[8px] text-slate-500 text-center uppercase flex items-center justify-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={enabledTypes.salahBenar} 
+                            onChange={(e) => setEnabledTypes({...enabledTypes, salahBenar: e.target.checked})}
+                            className="w-2 h-2 rounded-sm bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0"
+                          />
+                          S/B
+                        </label>
+                        <input type="number" disabled={!enabledTypes.salahBenar} value={counts.salahBenar} onChange={(e) => setCounts({...counts, salahBenar: parseInt(e.target.value) || 0})} className={`stat-input w-full ${!enabledTypes.salahBenar ? 'opacity-30' : ''}`} />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <label className="text-[8px] text-slate-500 text-center uppercase">Jodoh</label>
-                        <input type="number" value={counts.menjodohkan} onChange={(e) => setCounts({...counts, menjodohkan: parseInt(e.target.value) || 0})} className="stat-input w-full" />
+                        <label className="text-[8px] text-slate-500 text-center uppercase flex items-center justify-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={enabledTypes.menjodohkan} 
+                            onChange={(e) => setEnabledTypes({...enabledTypes, menjodohkan: e.target.checked})}
+                            className="w-2 h-2 rounded-sm bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0"
+                          />
+                          Jodoh
+                        </label>
+                        <input type="number" disabled={!enabledTypes.menjodohkan} value={counts.menjodohkan} onChange={(e) => setCounts({...counts, menjodohkan: parseInt(e.target.value) || 0})} className={`stat-input w-full ${!enabledTypes.menjodohkan ? 'opacity-30' : ''}`} />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <label className="text-[8px] text-slate-500 text-center uppercase">Essay</label>
-                        <input type="number" value={counts.essay} onChange={(e) => setCounts({...counts, essay: parseInt(e.target.value) || 0})} className="stat-input w-full" />
+                        <label className="text-[8px] text-slate-500 text-center uppercase flex items-center justify-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={enabledTypes.essay} 
+                            onChange={(e) => setEnabledTypes({...enabledTypes, essay: e.target.checked})}
+                            className="w-2 h-2 rounded-sm bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0"
+                          />
+                          Essay
+                        </label>
+                        <input type="number" disabled={!enabledTypes.essay} value={counts.essay} onChange={(e) => setCounts({...counts, essay: parseInt(e.target.value) || 0})} className={`stat-input w-full ${!enabledTypes.essay ? 'opacity-30' : ''}`} />
                     </div>
                 </div>
               </div>
@@ -353,28 +429,32 @@ const App = () => {
                 </div>
 
                 <div className="columns-2 gap-10 [column-rule:1px_solid_#000] text-justify">
-                  <div className="mb-6">
-                    <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">I. PILIHAN GANDA</div>
-                    <div className="space-y-6">
-                      {generatedExam.pilihan_ganda?.map((item: any, idx: number) => (
-                        <div key={idx} className="question break-inside-avoid mb-6">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[8px] font-bold border border-black px-1.5 py-0.5 uppercase tracking-tighter">
-                                {item.tipe || 'LOTS'}
-                            </span>
-                          </div>
-                          {item.stimulus && <div className="bg-slate-50 p-3 border border-black/10 border-l-4 border-l-black mb-3 italic text-[10.5px] leading-relaxed shadow-sm">{item.stimulus}</div>}
-                          <div className="flex gap-2 text-[11.5px]">
-                            <span className="font-bold min-w-[18px]">{item.no}.</span>
-                            <div className="flex-1">
-                              <p className="font-semibold leading-snug mb-2">{item.pertanyaan}</p>
-                              {renderOptions(item.opsi)}
+                  {generatedExam.pilihan_ganda?.length > 0 && (
+                    <div className="mb-6">
+                      <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">I. PILIHAN GANDA</div>
+                      <div className="space-y-6">
+                        {generatedExam.pilihan_ganda.map((item: any, idx: number) => (
+                          <div key={idx} className="question break-inside-avoid mb-6">
+                            {item.tipe && item.tipe !== 'LOTS' && item.tipe !== 'Dasar' && (
+                              <div className="flex justify-end mb-1">
+                                <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
+                                    {item.tipe}
+                                </span>
+                              </div>
+                            )}
+                            {item.stimulus && <div className="bg-slate-50 p-3 border border-black/10 border-l-4 border-l-black mb-3 italic text-[10.5px] leading-relaxed shadow-sm">{item.stimulus}</div>}
+                            <div className="flex gap-2 text-[11.5px]">
+                              <span className="font-bold min-w-[18px]">{item.no}.</span>
+                              <div className="flex-1">
+                                <p className="font-semibold leading-snug mb-2">{item.pertanyaan}</p>
+                                {renderOptions(item.opsi)}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {generatedExam.salah_benar?.length > 0 && (
                     <div className="mb-6">
