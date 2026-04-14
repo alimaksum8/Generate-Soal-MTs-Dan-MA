@@ -13,30 +13,30 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-300 antialiased lg:overflow-hidden min-h-screen lg:h-screen;
+    @apply bg-slate-950 text-slate-300 antialiased min-h-screen;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 }
 
 @layer components {
   .app-container {
-    @apply flex flex-col h-full min-h-screen lg:min-h-0 p-4 lg:p-6;
+    @apply flex flex-col min-h-screen p-4 lg:p-6;
   }
 
   .main-grid {
-    @apply flex flex-col lg:grid lg:grid-cols-[320px_1fr] gap-6 flex-1 min-h-0;
+    @apply flex flex-col lg:grid lg:grid-cols-[320px_1fr] gap-6 flex-1;
   }
 
   .sidebar {
-    @apply bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-4 lg:overflow-y-auto;
+    @apply bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-4 lg:h-[calc(100vh-140px)] lg:sticky lg:top-6;
   }
 
   .preview-container {
-    @apply bg-slate-100 rounded-lg p-4 lg:p-8 relative lg:h-full min-h-[600px] lg:min-h-0 text-black shadow-[inset_0_0_40px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden;
+    @apply bg-slate-100 rounded-lg p-4 lg:p-8 relative min-h-[600px] text-black shadow-[inset_0_0_40px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.3)] flex flex-col;
   }
 
   .paper-content {
-    @apply bg-white p-6 lg:p-10 flex-1 border border-slate-200 font-serif shadow-2xl overflow-y-auto min-h-0 h-0 w-full;
+    @apply bg-white p-6 lg:p-10 border border-slate-200 font-serif shadow-2xl w-full;
   }
 
   .input-field {
