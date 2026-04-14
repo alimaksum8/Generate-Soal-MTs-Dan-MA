@@ -99,26 +99,49 @@
     color: black !important;
     height: auto !important;
     min-height: 0 !important;
+    overflow: visible !important;
   }
 
-  .app-container, .main-grid, .sidebar, header {
+  /* Hide everything by default */
+  header, 
+  .sidebar, 
+  .absolute.bottom-8.right-8 {
     display: none !important;
+  }
+
+  /* Ensure containers don't restrict size or layout */
+  .app-container {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .main-grid {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
   }
 
   .preview-container {
     display: block !important;
     padding: 0 !important;
+    margin: 0 !important;
     background: white !important;
     box-shadow: none !important;
     height: auto !important;
     min-height: 0 !important;
+    width: 100% !important;
     position: static !important;
+    overflow: visible !important;
   }
 
   .paper-content {
     display: block !important;
     border: none !important;
     padding: 0 !important;
+    margin: 0 !important;
     box-shadow: none !important;
     width: 100% !important;
     height: auto !important;
@@ -127,16 +150,12 @@
 
   .columns-2 {
     column-count: 2 !important;
-    column-gap: 1.5cm !important;
+    column-gap: 1cm !important;
     column-rule: 1px solid #000 !important;
   }
 
   .break-inside-avoid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-  }
-
-  .absolute.bottom-8.right-8 {
-    display: none !important;
   }
 }
