@@ -64,6 +64,10 @@ const App = () => {
   const [generatedExam, setGeneratedExam] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setGrade('');
+  }, [level]);
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -361,7 +365,7 @@ const App = () => {
                     className="input-field appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Pilih Kelas</option>
-                    {['VII', 'VIII', 'IX', 'X', 'XI', 'XII'].map(g => (
+                    {(level === 'MTs' ? ['VII', 'VIII', 'IX'] : ['X', 'XI', 'XII']).map(g => (
                       <option key={g} value={g} className="bg-slate-900 text-white">{g}</option>
                     ))}
                   </select>
