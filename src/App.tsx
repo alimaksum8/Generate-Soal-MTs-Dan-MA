@@ -21,8 +21,10 @@ import {
   Building,
   Clock,
   Zap,
-  Activity
+  Activity,
+  Coffee
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 // --- API Configuration ---
 const apiKey = process.env.GEMINI_API_KEY; 
@@ -274,6 +276,44 @@ const App = () => {
 
   return (
     <div className="app-container">
+      <AnimatePresence>
+        {loading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md"
+          >
+            <div className="relative mb-6">
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)]"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Coffee className="w-8 h-8 text-blue-400 animate-pulse" />
+              </div>
+            </div>
+            <motion.h2 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl font-black text-white tracking-[0.2em] uppercase text-center"
+            >
+              Ngopi Dulu
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-slate-400 text-sm mt-3 font-medium tracking-wide"
+            >
+              Ali Maksum Sedang Berfikir Keras...
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="flex items-center justify-center gap-3 mb-6">
         <div className="bg-blue-600 p-2 rounded-lg shadow-lg">
             <Sparkles className="w-6 h-6 text-white" />
