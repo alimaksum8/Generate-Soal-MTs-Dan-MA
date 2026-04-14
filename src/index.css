@@ -150,11 +150,12 @@
 
   .columns-2 {
     column-count: 2 !important;
-    column-gap: 1cm !important;
+    column-gap: 0.8cm !important;
     column-rule: 1px solid #000 !important;
-    column-fill: auto !important; /* Mencegah browser mencoba menyeimbangkan tinggi kolom yang bikin celah */
+    column-fill: auto !important;
     display: block !important;
     height: auto !important;
+    width: 100% !important;
   }
 
   .break-inside-avoid {

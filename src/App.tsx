@@ -167,6 +167,54 @@ const App = () => {
     setTopics(prev => ({ ...prev, [key]: value }));
   };
 
+  const renderOptions = (opsi: any) => {
+    const options = Object.entries(opsi)
+      .filter(([key, val]) => val && ['a', 'b', 'c', 'd', 'e'].includes(key))
+      .sort((a, b) => a[0].localeCompare(b[0]));
+    
+    const maxLen = Math.max(...options.map(([_, val]) => String(val).length));
+    
+    // Horizontal: "a, b, c, d"
+    if (maxLen < 12) {
+      return (
+        <div className="flex flex-row flex-wrap gap-x-6 gap-y-1 pl-1 text-[11.5px]">
+          {options.map(([key, val]) => (
+            <p key={key}><span className="font-bold">{key.toUpperCase()}.</span> {val as string}</p>
+          ))}
+        </div>
+      );
+    }
+    
+    // Grid: "a, c / b, d"
+    if (maxLen < 35) {
+      const pairs = [];
+      if (options.length === 4) {
+        pairs.push(options[0], options[2], options[1], options[3]);
+      } else if (options.length === 5) {
+        pairs.push(options[0], options[2], options[1], options[3], options[4]);
+      } else {
+        pairs.push(...options);
+      }
+
+      return (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-1 text-[11.5px]">
+          {pairs.map(([key, val]) => (
+            <p key={key}><span className="font-bold">{key.toUpperCase()}.</span> {val as string}</p>
+          ))}
+        </div>
+      );
+    }
+    
+    // Vertical: "a / b / c / d"
+    return (
+      <div className="flex flex-col gap-1 pl-1 text-[11.5px]">
+        {options.map(([key, val]) => (
+          <p key={key}><span className="font-bold">{key.toUpperCase()}.</span> {val as string}</p>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
       <header className="flex items-center justify-center gap-3 mb-6">
@@ -305,7 +353,7 @@ const App = () => {
                 </div>
 
                 <div className="columns-2 gap-10 [column-rule:1px_solid_#000] text-justify">
-                  <div className="mb-6 break-inside-avoid-column">
+                  <div className="mb-6">
                     <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">I. PILIHAN GANDA</div>
                     <div className="space-y-6">
                       {generatedExam.pilihan_ganda?.map((item: any, idx: number) => (
@@ -320,13 +368,7 @@ const App = () => {
                             <span className="font-bold min-w-[18px]">{item.no}.</span>
                             <div className="flex-1">
                               <p className="font-semibold leading-snug mb-2">{item.pertanyaan}</p>
-                              <div className="flex flex-col gap-1 pl-1">
-                                <p>A. {item.opsi.a}</p>
-                                <p>B. {item.opsi.b}</p>
-                                <p>C. {item.opsi.c}</p>
-                                <p>D. {item.opsi.d}</p>
-                                {item.opsi.e && <p>E. {item.opsi.e}</p>}
-                              </div>
+                              {renderOptions(item.opsi)}
                             </div>
                           </div>
                         </div>
@@ -335,7 +377,7 @@ const App = () => {
                   </div>
 
                   {generatedExam.salah_benar?.length > 0 && (
-                    <div className="mb-6 break-inside-avoid-column">
+                    <div className="mb-6">
                         <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">II. SALAH / BENAR</div>
                         <div className="space-y-3">
                             {generatedExam.salah_benar.map((it: any, i: number) => (
@@ -349,7 +391,7 @@ const App = () => {
                   )}
 
                   {generatedExam.menjodohkan?.length > 0 && (
-                    <div className="mb-6 break-inside-avoid-column">
+                    <div className="mb-6">
                         <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">III. MENJODOHKAN</div>
                         <div className="space-y-3">
                             {generatedExam.menjodohkan.map((it: any, i: number) => (
@@ -363,7 +405,7 @@ const App = () => {
                   )}
 
                   {generatedExam.essay?.length > 0 && (
-                    <div className="break-inside-avoid-column">
+                    <div className="">
                       <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">IV. URAIAN / ESSAY</div>
                       <div className="space-y-5">
                         {generatedExam.essay.map((it: any, i: number) => (
