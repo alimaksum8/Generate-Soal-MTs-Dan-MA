@@ -63,6 +63,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [generatedExam, setGeneratedExam] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hideKop, setHideKop] = useState(false);
 
   useEffect(() => {
     setGrade('');
@@ -334,8 +335,17 @@ const App = () => {
         <div className="sidebar">
           <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-6 custom-scrollbar">
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-3 h-3" /> Identitas Ujian
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2"><Settings className="w-3 h-3" /> Identitas Ujian</span>
+                <label className="flex items-center gap-1.5 cursor-pointer hover:text-slate-200 transition-colors normal-case font-medium text-[10px]">
+                  <input 
+                    type="checkbox" 
+                    checked={hideKop} 
+                    onChange={(e) => setHideKop(e.target.checked)}
+                    className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
+                  />
+                  Tanpa Kop
+                </label>
               </p>
               
               <div className="btn-toggle-group">
@@ -465,24 +475,26 @@ const App = () => {
           <div className="paper-content" id="exam-paper">
             {generatedExam ? (
               <>
-                <div className="border-b-[4px] border-double border-black pb-3 mb-5 flex items-center gap-6 text-center">
-                  {logo ? (
-                    <img src={logo} className="w-20 h-20 object-contain" alt="Logo" />
-                  ) : (
-                    <div className="w-20 h-20 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
-                      LOGO<br/>LEMBAGA
+                {!hideKop && (
+                  <div className="border-b-[4px] border-double border-black pb-3 mb-5 flex items-center gap-6 text-center">
+                    {logo ? (
+                      <img src={logo} className="w-20 h-20 object-contain" alt="Logo" />
+                    ) : (
+                      <div className="w-20 h-20 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
+                        LOGO<br/>LEMBAGA
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
+                      <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
+                      <h3 className="font-bold uppercase text-xl leading-tight">
+                        {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
+                      </h3>
+                      <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
+                      <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
-                    <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
-                    <h3 className="font-bold uppercase text-xl leading-tight">
-                      {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
-                    </h3>
-                    <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
-                    <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                   </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 text-[11px] mb-6 border-2 border-black p-3 bg-slate-50/50">
                   <div className="space-y-1">
