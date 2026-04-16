@@ -64,6 +64,7 @@ const App = () => {
   const [generatedExam, setGeneratedExam] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [hideKop, setHideKop] = useState(false);
+  const [useStimulus, setUseStimulus] = useState(false);
 
   useEffect(() => {
     setGrade('');
@@ -163,7 +164,8 @@ const App = () => {
     1. Bahasa: Gunakan Bahasa Indonesia yang baku, formal, dan mudah dipahami.
     2. Konten: Harus relevan dengan materi ${topicsString} untuk jenjang ${level} kelas ${grade}.
     3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
-    4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).`;
+    4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).
+    5. Stimulus: ${useStimulus ? 'WAJIB sertakan stimulus (teks, kutipan, atau konteks) untuk setiap butir soal jika memungkinkan.' : 'JANGAN gunakan stimulus. Langsung ke pertanyaan inti.'}`;
 
     let countsText = `PENTING: `;
     const countsParts = [];
@@ -396,7 +398,18 @@ const App = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Parameter Soal</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Parameter Soal</p>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 transition-colors font-medium text-[10px]">
+                  <input 
+                    type="checkbox" 
+                    checked={useStimulus} 
+                    onChange={(e) => setUseStimulus(e.target.checked)}
+                    className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
+                  />
+                  Gunakan Stimulus
+                </label>
+              </div>
               <div className="stats-card">
                 <div className="stat-row text-blue-400">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -476,37 +489,39 @@ const App = () => {
             {generatedExam ? (
               <>
                 {!hideKop && (
-                  <div className="border-b-[4px] border-double border-black pb-3 mb-5 flex items-center gap-6 text-center">
-                    {logo ? (
-                      <img src={logo} className="w-20 h-20 object-contain" alt="Logo" />
-                    ) : (
-                      <div className="w-20 h-20 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
-                        LOGO<br/>LEMBAGA
+                  <>
+                    <div className="border-b-[4px] border-double border-black pb-3 mb-5 flex items-center gap-6 text-center">
+                      {logo ? (
+                        <img src={logo} className="w-20 h-20 object-contain" alt="Logo" />
+                      ) : (
+                        <div className="w-20 h-20 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
+                          LOGO<br/>LEMBAGA
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
+                        <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
+                        <h3 className="font-bold uppercase text-xl leading-tight">
+                          {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
+                        </h3>
+                        <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
+                        <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                       </div>
-                    )}
-                    <div className="flex-1">
-                      <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
-                      <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
-                      <h3 className="font-bold uppercase text-xl leading-tight">
-                        {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
-                      </h3>
-                      <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
-                      <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                     </div>
-                  </div>
-                )}
 
-                <div className="grid grid-cols-2 text-[11px] mb-6 border-2 border-black p-3 bg-slate-50/50">
-                  <div className="space-y-1">
-                    <p className="flex gap-2"><span className="w-24 font-bold">Mata Pelajaran</span>: <span className="font-bold">{subject}</span></p>
-                    <p className="flex gap-2"><span className="w-24 font-bold">Materi Utama</span>: <span>{Object.values(topics).filter(t => t).join(', ')}</span></p>
-                    <p className="flex gap-2"><span className="w-24 font-bold">Hari / Tanggal</span>: <span>{examDay}, {examDate}</span></p>
-                  </div>
-                  <div className="space-y-1 pl-8 border-l border-black/20">
-                    <p className="flex gap-2"><span className="w-24 font-bold">Tingkat / Kelas</span>: <span className="font-bold">{level} / {grade}</span></p>
-                    <p className="flex gap-2"><span className="w-24 font-bold">Alokasi Waktu</span>: <span>90 Menit</span></p>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 text-[11px] mb-6 border-2 border-black p-3 bg-slate-50/50">
+                      <div className="space-y-1">
+                        <p className="flex gap-2"><span className="w-24 font-bold">Mata Pelajaran</span>: <span className="font-bold">{subject}</span></p>
+                        <p className="flex gap-2"><span className="w-24 font-bold">Materi Utama</span>: <span>{Object.values(topics).filter(t => t).join(', ')}</span></p>
+                        <p className="flex gap-2"><span className="w-24 font-bold">Hari / Tanggal</span>: <span>{examDay}, {examDate}</span></p>
+                      </div>
+                      <div className="space-y-1 pl-8 border-l border-black/20">
+                        <p className="flex gap-2"><span className="w-24 font-bold">Tingkat / Kelas</span>: <span className="font-bold">{level} / {grade}</span></p>
+                        <p className="flex gap-2"><span className="w-24 font-bold">Alokasi Waktu</span>: <span>90 Menit</span></p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="columns-2 gap-10 [column-rule:1px_solid_#000] text-justify">
                   {generatedExam.pilihan_ganda?.length > 0 && (
