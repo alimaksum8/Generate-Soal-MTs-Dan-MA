@@ -66,6 +66,28 @@ const App = () => {
   const [hideKop, setHideKop] = useState(false);
   const [useStimulus, setUseStimulus] = useState(false);
 
+  const renderVisual = (visual: any) => {
+    if (!visual) return null;
+    if (visual.type === 'svg') {
+      return (
+        <div 
+          className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[120px] max-h-[250px]"
+          dangerouslySetInnerHTML={{ __html: visual.content.includes('<svg') ? visual.content : `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${visual.content}</svg>` }}
+        />
+      );
+    }
+    if (visual.type === 'placeholder') {
+      return (
+        <div className="my-3 border-2 border-dashed border-black/20 bg-slate-50 p-4 flex flex-col items-center justify-center gap-2 text-center rounded-sm">
+          <ImageIcon className="w-6 h-6 text-slate-300" />
+          <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Area Gambar / Ilustrasi</p>
+          <p className="text-[8px] text-slate-400 italic max-w-[200px] leading-tight">{visual.content}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   useEffect(() => {
     setGrade('');
   }, [level]);
@@ -116,6 +138,7 @@ const App = () => {
           "no": 1, 
           "tipe": "HOTS", 
           "stimulus": "...", 
+          "visual": { "type": "svg|placeholder", "content": "..." },
           "pertanyaan": "...", 
           "opsi": {"a": "", "b": "", "c": "", "d": "" ${isMA ? ', "e": ""' : ''}}, 
           "kunci": "a"
@@ -165,7 +188,13 @@ const App = () => {
     2. Konten: Harus relevan dengan materi ${topicsString} untuk jenjang ${level} kelas ${grade}.
     3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
     4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).
-    5. Stimulus: ${useStimulus ? 'WAJIB sertakan stimulus (teks, kutipan, atau konteks) untuk setiap butir soal jika memungkinkan.' : 'JANGAN gunakan stimulus. Langsung ke pertanyaan inti.'}`;
+    5. Stimulus: ${useStimulus ? 'WAJIB sertakan stimulus (teks, kutipan, atau konteks) untuk setiap butir soal jika memungkinkan.' : 'JANGAN gunakan stimulus. Langsung ke pertanyaan inti.'}
+    6. Visual (OPSIONAL): Jika soal membutuhkan ilustrasi (misal: grafik, diagram, peta, atau gambar), sertakan field "visual". 
+       - Gunakan type "svg" untuk diagram geometri (kubus, bola, jaring-jaring), grafik fungsi, atau bagan. 
+         * WAJIB: Gunakan stroke="black", stroke-width="1", dan fill="none" (atau warna sangat muda).
+         * WAJIB: Sertakan viewBox agar responsif (misal: viewBox="0 0 200 200").
+         * Contoh: Untuk "bola dalam kubus", gambar kotak (kubus) dan lingkaran (bola) di dalamnya menggunakan tag <rect> dan <circle>.
+       - Gunakan type "placeholder" HANYA untuk gambar yang sangat kompleks (foto tokoh, peta buta detail, pemandangan), sertakan deskripsi gambar di "content".`;
 
     let countsText = `PENTING: `;
     const countsParts = [];
@@ -538,6 +567,7 @@ const App = () => {
                               </div>
                             )}
                             {item.stimulus && <div className="bg-slate-50 p-3 border border-black/10 border-l-4 border-l-black mb-3 italic text-[10.5px] leading-relaxed shadow-sm">{item.stimulus}</div>}
+                            {renderVisual(item.visual)}
                             <div className="flex gap-2 text-[11.5px]">
                               <span className="font-bold min-w-[18px]">{item.no}.</span>
                               <div className="flex-1">
@@ -564,6 +594,7 @@ const App = () => {
                                         </span>
                                       </div>
                                     )}
+                                    {renderVisual(it.visual)}
                                     <div className="flex gap-2 text-[11.5px]">
                                         <span className="font-bold">{it.no}.</span>
                                         <p>{it.pertanyaan} (S/B)</p>
@@ -588,6 +619,7 @@ const App = () => {
                                           </span>
                                         </div>
                                       )}
+                                      {renderVisual(it.visual)}
                                       <div className="flex gap-2 text-[11.5px]">
                                           <span className="font-bold">{it.no}.</span>
                                           <p className="flex-1 border-b border-dotted border-black/40 pb-1">{it.pertanyaan}</p>
@@ -624,6 +656,7 @@ const App = () => {
                                 </span>
                               </div>
                             )}
+                            {renderVisual(it.visual)}
                             <div className="flex gap-2 text-[11.5px]">
                               <span className="font-bold min-w-[18px]">{it.no}.</span>
                               <div className="flex-1">
