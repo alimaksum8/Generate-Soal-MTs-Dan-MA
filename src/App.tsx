@@ -65,14 +65,20 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [hideKop, setHideKop] = useState(false);
   const [useStimulus, setUseStimulus] = useState(false);
+  const [hotsLevels, setHotsLevels] = useState<string[]>(['C4', 'C5', 'C6']);
+  const [sedangLevels, setSedangLevels] = useState<string[]>(['C2', 'C3']);
 
   const renderVisual = (visual: any) => {
     if (!visual) return null;
     if (visual.type === 'svg') {
+      let svgContent = visual.content || '';
+      // Cleanup markdown if AI wraps it
+      svgContent = svgContent.replace(/```svg/g, '').replace(/```/g, '').trim();
+      
       return (
         <div 
           className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[120px] max-h-[250px]"
-          dangerouslySetInnerHTML={{ __html: visual.content.includes('<svg') ? visual.content : `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${visual.content}</svg>` }}
+          dangerouslySetInnerHTML={{ __html: svgContent.includes('<svg') ? svgContent : `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>` }}
         />
       );
     }
@@ -189,12 +195,13 @@ const App = () => {
     3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
     4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).
     5. Stimulus: ${useStimulus ? 'WAJIB sertakan stimulus (teks, kutipan, atau konteks) untuk setiap butir soal jika memungkinkan.' : 'JANGAN gunakan stimulus. Langsung ke pertanyaan inti.'}
-    6. Visual (OPSIONAL): Jika soal membutuhkan ilustrasi (misal: grafik, diagram, peta, atau gambar), sertakan field "visual". 
-       - Gunakan type "svg" untuk diagram geometri (kubus, bola, jaring-jaring), grafik fungsi, atau bagan. 
+    6. Visual (OPSIONAL): Jika soal membutuhkan ilustrasi (misal: grafik, diagram, peta, lambang, kaligrafi, atau gambar tokoh), sertakan field "visual". 
+       - Gunakan type "svg" untuk: diagram geometri (kubus, bola, jaring-jaring), grafik fungsi (linear, kuadrat, dll), diagram kartesius, bagan alir, atau silsilah.
+         * WAJIB: Jangan gunakan "placeholder" untuk grafik matematika sederharna. Buatlah SVG-nya.
          * WAJIB: Gunakan stroke="black", stroke-width="1", dan fill="none" (atau warna sangat muda).
          * WAJIB: Sertakan viewBox agar responsif (misal: viewBox="0 0 200 200").
-         * Contoh: Untuk "bola dalam kubus", gambar kotak (kubus) dan lingkaran (bola) di dalamnya menggunakan tag <rect> dan <circle>.
-       - Gunakan type "placeholder" HANYA untuk gambar yang sangat kompleks (foto tokoh, peta buta detail, pemandangan), sertakan deskripsi gambar di "content".`;
+       - Gunakan type "placeholder" HANYA untuk gambar yang tidak mungkin dibuat dengan SVG sederhana (misal: "Foto Sejarah", "Peta dunia detail", "Wajah tokoh", "Pemandangan alama"), sertakan deskripsi gambar di "content". 
+       - Upayakan menyertakan visual pada minimal 2-3 nomor soal (terutama HOTS) untuk semua mata pelajaran agar naskah lebih interaktif.`;
 
     let countsText = `PENTING: `;
     const countsParts = [];
@@ -204,6 +211,9 @@ const App = () => {
     if (enabledTypes.essay) countsParts.push(`${counts.essay} soal Essay`);
     
     countsText += countsParts.join(', ') + '.';
+
+    const hotsLevelsText = hotsLevels.length > 0 ? `dengan level kognitif ${hotsLevels.join('/')}` : '';
+    const sedangLevelsText = sedangLevels.length > 0 ? `dengan level kognitif ${sedangLevels.join('/')}` : '';
 
     const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (Kementerian Agama RI). 
     Tugas Anda adalah membuat naskah soal, kisi-kisi, dan kunci jawaban yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
@@ -216,6 +226,9 @@ const App = () => {
     ${outputFormat}
 
     ${countsText}. 
+    - Untuk soal HOTS: ${hotsLevelsText}
+    - Untuk soal SEDANG: ${sedangLevelsText}
+    
     PENTING: Buatlah Kisi-kisi soal yang mencakup SEMUA butir soal yang dibuat (Pilihan Ganda, Salah/Benar, Menjodohkan, dan Essay) dengan nomor urut yang sesuai. Kunci jawaban harus lengkap untuk semua bagian.`;
 
     const userQuery = `Buatlah naskah soal ujian untuk mata pelajaran ${subject} kelas ${grade} ${level}. Materi utama: ${topicsString}.`;
@@ -452,15 +465,51 @@ const App = () => {
                   </label>
                   <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.pilihanGanda} onChange={(e) => setCounts({...counts, pilihanGanda: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
                 </div>
-                <div className="stat-row text-amber-400">
-                  <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Target HOTS</span>
-                  <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.hots} onChange={(e) => setCounts({...counts, hots: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
+                <div className="flex flex-col gap-1 pb-1.5 border-b border-slate-800/30">
+                  <div className="stat-row text-amber-400 border-none pb-0">
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Target HOTS</span>
+                    <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.hots} onChange={(e) => setCounts({...counts, hots: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
+                  </div>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 ml-4 mt-1">
+                    {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map(lvl => (
+                      <label key={lvl} className={`flex items-center gap-1 cursor-pointer text-[9px] transition-colors ${hotsLevels.includes(lvl) ? 'text-amber-400' : 'text-slate-500 hover:text-slate-400'}`}>
+                        <input 
+                          type="checkbox" 
+                          checked={hotsLevels.includes(lvl)}
+                          onChange={(e) => {
+                            if (e.target.checked) setHotsLevels([...hotsLevels, lvl]);
+                            else setHotsLevels(hotsLevels.filter(l => l !== lvl));
+                          }}
+                          className="w-2.5 h-2.5 rounded-sm bg-slate-800 border-slate-700 text-amber-500 focus:ring-0"
+                        />
+                        {lvl}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div className="stat-row text-emerald-400">
-                  <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> Target Sedang</span>
-                  <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.sedang} onChange={(e) => setCounts({...counts, sedang: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
+                <div className="flex flex-col gap-1 pb-1.5 border-b border-slate-800/30">
+                  <div className="stat-row text-emerald-400 border-none pb-0">
+                    <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> Target Sedang</span>
+                    <input type="number" disabled={!enabledTypes.pilihanGanda} value={counts.sedang} onChange={(e) => setCounts({...counts, sedang: parseInt(e.target.value) || 0})} className={`stat-input ${!enabledTypes.pilihanGanda ? 'opacity-30' : ''}`} />
+                  </div>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 ml-4 mt-1">
+                    {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map(lvl => (
+                      <label key={lvl} className={`flex items-center gap-1 cursor-pointer text-[9px] transition-colors ${sedangLevels.includes(lvl) ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'}`}>
+                        <input 
+                          type="checkbox" 
+                          checked={sedangLevels.includes(lvl)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSedangLevels([...sedangLevels, lvl]);
+                            else setSedangLevels(sedangLevels.filter(l => l !== lvl));
+                          }}
+                          className="w-2.5 h-2.5 rounded-sm bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"
+                        />
+                        {lvl}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div className="h-px bg-slate-700 my-1"></div>
+                <div className="h-px bg-slate-700 my-1 hidden"></div>
                 <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col gap-1">
                         <label className="text-[8px] text-slate-500 text-center uppercase flex items-center justify-center gap-1 cursor-pointer">
