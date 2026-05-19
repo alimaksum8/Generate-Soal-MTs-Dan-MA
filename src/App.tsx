@@ -85,7 +85,7 @@ const App = () => {
       
       return (
         <div 
-          className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[80px] max-h-[160px]"
+          className="my-1.5 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[80px] max-h-[160px]"
           dangerouslySetInnerHTML={{ 
             __html: needsWrap 
               ? `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; max-height:140px;">${content}</svg>` 
@@ -97,7 +97,7 @@ const App = () => {
 
     if (type === 'image' || type === 'url' || (content.startsWith('http') || content.startsWith('data:image'))) {
       return (
-        <div className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden">
+        <div className="my-1.5 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden">
           <img src={content} alt="Ilustrasi" className="max-h-[160px] object-contain" referrerPolicy="no-referrer" />
         </div>
       );
@@ -105,7 +105,7 @@ const App = () => {
     
     if (type === 'placeholder' || !type) {
       return (
-        <div className="my-3 border-2 border-dashed border-black/20 bg-slate-50 p-4 flex flex-col items-center justify-center gap-2 text-center rounded-sm min-h-[100px]">
+        <div className="my-1.5 border-2 border-dashed border-black/20 bg-slate-50 p-4 flex flex-col items-center justify-center gap-2 text-center rounded-sm min-h-[100px]">
           <ImageIcon className="w-6 h-6 text-slate-300" />
           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Area Gambar / Ilustrasi</p>
           <p className="text-[8px] text-slate-400 italic max-w-[250px] leading-tight">{content || 'Gambar tidak tersedia'}</p>
@@ -606,32 +606,31 @@ const App = () => {
               <>
                 {!hideKop && (
                   <>
-                    <div className="border-b-[4px] border-double border-black pb-3 mb-5 flex items-center gap-6 text-center">
+                    <div className="border-b-[4px] border-double border-black pb-1 mb-2 flex items-center gap-6 text-center">
                       {logo ? (
                         <img src={logo} className="w-20 h-20 object-contain" alt="Logo" />
                       ) : (
-                        <div className="w-20 h-20 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
+                        <div className="w-24 h-24 bg-slate-50 border-2 border-black flex items-center justify-center text-[9px] font-bold text-center p-2 leading-tight">
                           LOGO<br/>LEMBAGA
                         </div>
                       )}
                       <div className="flex-1">
-                        <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">YAYASAN PONDOK PESANTREN DARUL HUDA PENGARANG</h2>
                         <h2 className="font-bold uppercase text-lg leading-tight tracking-tight">{generatedExam.kop.lembaga}</h2>
                         <h3 className="font-bold uppercase text-xl leading-tight">
                           {level === 'MTs' ? 'MADRASAH TSANAWIYAH DARUL HUDA' : 'MADRASAH ALIYAH DARUL HUDA'}
                         </h3>
-                        <p className="text-sm font-bold mt-1">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
-                        <p className="text-[10px] font-medium mt-1">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
+                        <p className="text-sm font-bold mt-0.5 uppercase tracking-wide">TAHUN PELAJARAN {generatedExam.kop.tahun_ajaran}</p>
+                        <p className="text-[9px] font-medium leading-tight">Jl. KH. Moch. Chozin Toyib No.2 Rt 01/ Rw 01 Desa pengarang Kec. Jambesari Darus Sholah Kab. Bondowoso</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 text-[11px] mb-6 border-2 border-black p-3 bg-slate-50/50">
-                      <div className="space-y-1">
+                    <div className="grid grid-cols-2 text-[11px] mb-3 border-2 border-black p-2 bg-slate-50/50">
+                      <div className="space-y-0.5">
                         <p className="flex gap-2"><span className="w-24 font-bold">Mata Pelajaran</span>: <span className="font-bold">{subject}</span></p>
                         <p className="flex gap-2"><span className="w-24 font-bold">Materi Utama</span>: <span>{Object.values(topics).filter(t => t).join(', ')}</span></p>
                         <p className="flex gap-2"><span className="w-24 font-bold">Hari / Tanggal</span>: <span>{examDay}, {examDate}</span></p>
                       </div>
-                      <div className="space-y-1 pl-8 border-l border-black/20">
+                      <div className="space-y-0.5 pl-8 border-l border-black/20">
                         <p className="flex gap-2"><span className="w-24 font-bold">Tingkat / Kelas</span>: <span className="font-bold">{level} / {grade}</span></p>
                         <p className="flex gap-2"><span className="w-24 font-bold">Alokasi Waktu</span>: <span>90 Menit</span></p>
                       </div>
@@ -641,24 +640,24 @@ const App = () => {
 
                 <div className="columns-2 gap-10 [column-rule:1px_solid_#000] text-justify">
                   {generatedExam.pilihan_ganda?.length > 0 && (
-                    <div className="mb-6">
-                      <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">I. PILIHAN GANDA</div>
-                      <div className="space-y-6">
+                    <div className="mb-4">
+                      <div className="font-bold border-b-2 border-black mb-2 text-[13px] pb-0.5 uppercase">I. PILIHAN GANDA</div>
+                      <div className="space-y-3">
                         {generatedExam.pilihan_ganda.map((item: any, idx: number) => (
-                          <div key={idx} className="question break-inside-avoid mb-6">
+                          <div key={idx} className="question break-inside-avoid mb-2">
                             {item.tipe && item.tipe !== 'LOTS' && item.tipe !== 'Dasar' && (
-                              <div className="flex justify-end mb-1">
+                              <div className="flex justify-end mb-0.5">
                                 <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
                                     {item.tipe}
                                 </span>
                               </div>
                             )}
-                            {item.stimulus && <div className="bg-slate-50 p-3 border border-black/10 border-l-4 border-l-black mb-3 italic text-[10.5px] leading-relaxed shadow-sm">{item.stimulus}</div>}
+                            {item.stimulus && <div className="bg-slate-50 p-2 border border-black/10 border-l-4 border-l-black mb-1.5 italic text-[10.5px] leading-relaxed shadow-sm">{item.stimulus}</div>}
                             {renderVisual(item.visual)}
                             <div className="flex gap-2 text-[11.5px]">
                               <span className="font-bold min-w-[18px]">{item.no}.</span>
                               <div className="flex-1">
-                                <p className="font-semibold leading-snug mb-2">{item.pertanyaan}</p>
+                                <p className="font-semibold leading-tight mb-1">{item.pertanyaan}</p>
                                 {renderOptions(item.opsi)}
                               </div>
                             </div>
@@ -669,13 +668,13 @@ const App = () => {
                   )}
 
                   {generatedExam.salah_benar?.length > 0 && (
-                    <div className="mb-6">
-                        <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">II. SALAH / BENAR</div>
-                        <div className="space-y-3">
+                    <div className="mb-4">
+                        <div className="font-bold border-b-2 border-black mb-2 text-[13px] pb-0.5 uppercase">II. SALAH / BENAR</div>
+                        <div className="space-y-1">
                             {generatedExam.salah_benar.map((it: any, i: number) => (
-                                <div key={i} className="break-inside-avoid mb-4">
+                                <div key={i} className="break-inside-avoid mb-2">
                                     {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
-                                      <div className="flex justify-end mb-1">
+                                      <div className="flex justify-end mb-0.5">
                                         <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
                                             {it.tipe}
                                         </span>
@@ -693,14 +692,14 @@ const App = () => {
                   )}
 
                   {generatedExam.menjodohkan?.soal?.length > 0 && (
-                    <div className="mb-6">
-                        <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">III. MENJODOHKAN</div>
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="space-y-3">
+                    <div className="mb-4">
+                        <div className="font-bold border-b-2 border-black mb-2 text-[13px] pb-0.5 uppercase">III. MENJODOHKAN</div>
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="space-y-1">
                               {generatedExam.menjodohkan.soal.map((it: any, i: number) => (
-                                  <div key={i} className="break-inside-avoid mb-4">
+                                  <div key={i} className="break-inside-avoid mb-2">
                                       {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
-                                        <div className="flex justify-end mb-1">
+                                        <div className="flex justify-end mb-0.5">
                                           <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
                                               {it.tipe}
                                           </span>
@@ -709,7 +708,7 @@ const App = () => {
                                       {renderVisual(it.visual)}
                                       <div className="flex gap-2 text-[11.5px]">
                                           <span className="font-bold">{it.no}.</span>
-                                          <p className="flex-1 border-b border-dotted border-black/40 pb-1">{it.pertanyaan}</p>
+                                          <p className="flex-1 border-b border-dotted border-black/40 pb-0.5">{it.pertanyaan}</p>
                                           <span className="min-w-[80px] border-b border-black text-center"></span>
                                       </div>
                                   </div>
@@ -731,13 +730,13 @@ const App = () => {
                   )}
 
                   {generatedExam.essay?.length > 0 && (
-                    <div className="">
-                      <div className="font-bold border-b-2 border-black mb-4 text-[13px] pb-1 uppercase">IV. URAIAN / ESSAY</div>
-                      <div className="space-y-5">
+                    <div className="mb-2">
+                      <div className="font-bold border-b-2 border-black mb-2 text-[13px] pb-0.5 uppercase">IV. URAIAN / ESSAY</div>
+                      <div className="space-y-3">
                         {generatedExam.essay.map((it: any, i: number) => (
-                          <div key={i} className="break-inside-avoid mb-4">
+                          <div key={i} className="break-inside-avoid mb-2">
                             {it.tipe && it.tipe !== 'LOTS' && it.tipe !== 'Dasar' && (
-                              <div className="flex justify-end mb-1">
+                              <div className="flex justify-end mb-0.5">
                                 <span className="text-[7px] font-bold border border-black px-1 py-0 uppercase tracking-tighter leading-none">
                                     {it.tipe}
                                 </span>
@@ -747,8 +746,8 @@ const App = () => {
                             <div className="flex gap-2 text-[11.5px]">
                               <span className="font-bold min-w-[18px]">{it.no}.</span>
                               <div className="flex-1">
-                                  <p className="font-semibold leading-snug">{it.pertanyaan}</p>
-                                  <div className="mt-4 border-b border-dotted border-black/30 h-4 w-full"></div>
+                                  <p className="font-semibold leading-tight">{it.pertanyaan}</p>
+                                  <div className="mt-2 border-b border-dotted border-black/30 h-4 w-full"></div>
                               </div>
                             </div>
                           </div>
