@@ -31,7 +31,9 @@ import {
   Mail,
   LogIn,
   Search,
-  X
+  X,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
@@ -50,6 +52,7 @@ import {
   orderBy, 
   getDocs, 
   serverTimestamp,
+  updateDoc,
   deleteDoc,
   doc,
   limit 
@@ -78,12 +81,7 @@ const App = () => {
   const [examDate, setExamDate] = useState('');
   const [logo, setLogo] = useState(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [topics, setTopics] = useState({
-    topic1: '',
-    topic2: '',
-    topic3: '',
-    topic4: ''
-  });
+  const [topics, setTopics] = useState<string[]>(['']);
   const [counts, setCounts] = useState({
     pilihanGanda: 10,
     hots: 3,
@@ -286,8 +284,44 @@ const App = () => {
     setAcademicYear(exam.academicYear || '');
     setExamDate(exam.examDate || '');
     setExamDay(exam.examDay || '');
-    setTopics(exam.topics || { topic1: '', topic2: '', topic3: '', topic4: '' });
+    setTopics(Array.isArray(exam.topics) ? exam.topics : ['']);
     setShowHistory(false);
+  };
+
+  const updateExamHeader = async (examId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const semMatch = institutionHeader.match(/SEMESTER\s+(GANJIL|GENAP)/i);
+      const extractedSemester = semMatch ? semMatch[1].toUpperCase() : 'UTAMA';
+
+      const updateData = {
+        institutionHeader,
+        academicYear,
+        semester: extractedSemester,
+        subject,
+        grade,
+        level,
+        examDate,
+        examDay,
+        displayName: `${subject} - Kelas ${grade} (${extractedSemester} ${academicYear})`,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(doc(db, 'exams', examId), updateData);
+      
+      setSavedExams(prev => prev.map(ex => 
+        ex.id === examId ? { ...ex, ...updateData } : ex
+      ));
+      
+      setLoading(false);
+      alert('Kop/Header naskah berhasil diperbarui!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `exams/${examId}`);
+      setLoading(false);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,7 +338,7 @@ const App = () => {
   };
 
   const handleGenerate = async () => {
-    const activeTopics = Object.values(topics).filter((t): t is string => typeof t === 'string' && t.trim() !== '');
+    const activeTopics = topics.filter(t => t.trim() !== '');
     const hasEnabledType = Object.values(enabledTypes).some(v => v);
     
     if (!subject || activeTopics.length === 0 || !grade) {
@@ -469,8 +503,24 @@ const App = () => {
     callApi();
   };
 
-  const handleTopicChange = (key: string, value: string) => {
-    setTopics(prev => ({ ...prev, [key]: value }));
+  const addTopic = () => {
+    setTopics([...topics, '']);
+  };
+
+  const removeTopic = (index: number) => {
+    if (topics.length > 1) {
+      const newTopics = [...topics];
+      newTopics.splice(index, 1);
+      setTopics(newTopics);
+    } else {
+      setTopics(['']);
+    }
+  };
+
+  const handleTopicChange = (index: number, value: string) => {
+    const newTopics = [...topics];
+    newTopics[index] = value;
+    setTopics(newTopics);
   };
 
   const renderOptions = (opsi: any) => {
@@ -777,15 +827,25 @@ const App = () => {
                              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Ready to Load</span>
                           </div>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if(confirm('Hapus naskah ini?')) deleteExam(ex.id, e);
-                            }}
-                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={(e) => updateExamHeader(ex.id, e)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-400/10 text-orange-400 hover:bg-orange-400/20 border border-orange-400/20 transition-all text-[9px] font-bold uppercase"
+                              title="Update Header/Kop dengan data form saat ini"
+                            >
+                              <Settings className="w-3.5 h-3.5" />
+                              Update Kop
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if(confirm('Hapus naskah ini?')) deleteExam(ex.id, e);
+                              }}
+                              className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -859,10 +919,37 @@ const App = () => {
                 <input type="text" value={examDate} onChange={(e) => setExamDate(e.target.value)} placeholder="Tanggal" className="input-field" />
               </div>
 
-              <div className="space-y-1.5">
-                  {[1, 2, 3, 4].map(n => (
-                  <input key={n} type="text" value={(topics as any)[`topic${n}`]} onChange={(e) => handleTopicChange(`topic${n}`, e.target.value.toUpperCase())} placeholder={`Materi Utama ${n}`} className="input-field text-[11px]" />
-                  ))}
+              <div className="space-y-1.5 mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Materi Utama</p>
+                  <button 
+                    onClick={addTopic}
+                    className="p-1 rounded-md bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 transition-all"
+                    title="Tambah Materi"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+                {topics.map((topic, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      value={topic} 
+                      onChange={(e) => handleTopicChange(index, e.target.value.toUpperCase())} 
+                      placeholder={`Materi Utama ${index + 1}`} 
+                      className="input-field text-[11px] flex-1" 
+                    />
+                    <div className="flex flex-col gap-1">
+                      <button 
+                        onClick={() => removeTopic(index)}
+                        className="p-1.5 rounded-lg bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-all border border-red-400/20"
+                        title="Hapus Materi"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
