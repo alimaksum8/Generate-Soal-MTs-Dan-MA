@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { 
   FileText, 
   Settings, 
@@ -22,15 +20,55 @@ import {
   Clock,
   Zap,
   Activity,
-  Coffee
+  Coffee,
+  LogOut,
+  History,
+  Save,
+  User,
+  Database,
+  Trash2,
+  Lock,
+  Mail,
+  LogIn,
+  Search,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
+import { 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut,
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  orderBy, 
+  getDocs, 
+  serverTimestamp,
+  deleteDoc,
+  doc,
+  limit 
+} from 'firebase/firestore';
 
 // --- API Configuration ---
 const apiKey = process.env.GEMINI_API_KEY; 
 const MODEL_NAME = "gemini-3-flash-preview";
 
 const App = () => {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSavedDataModal, setShowSavedDataModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [savedExams, setSavedExams] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [level, setLevel] = useState('MTs');
   const [academicYear, setAcademicYear] = useState('2024/2025');
   const [institutionHeader, setInstitutionHeader] = useState('ASESMEN MADRASAH SEMESTER');
@@ -118,6 +156,139 @@ const App = () => {
   useEffect(() => {
     setGrade('');
   }, [level]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchExams();
+    }
+  }, [user]);
+
+  const fetchExams = async () => {
+    if (!user) return;
+    try {
+      console.log("Fetching exams for user:", user.uid);
+      const q = query(
+        collection(db, 'exams'),
+        where('userId', '==', user.uid),
+        limit(50)
+      );
+      const snapshot = await getDocs(q);
+      const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log("Fetched exams count:", exams.length);
+      setSavedExams(exams);
+    } catch (err: any) {
+      console.error("Error fetching exams detail:", err);
+      if (err.message && err.message.includes('permissions')) {
+        setError("Izin ditolak. Pastikan database Firestore sudah aktif dan Rules sudah dideploy.");
+      }
+    }
+  };
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email || !password) {
+      setError("Email dan Password wajib diisi.");
+      return;
+    }
+    
+    setAuthLoading(true);
+    setError(null);
+    try {
+      // Try to sign in
+      await signInWithEmailAndPassword(auth, email, password);
+      setShowLoginModal(false);
+      setPassword('');
+    } catch (err: any) {
+      // If user doesn't exist, auto-register (tanpa daftar)
+      if (err.code === 'auth/user-not-found') {
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          setShowLoginModal(false);
+          setPassword('');
+        } catch (createErr: any) {
+          setError("Gagal masuk. Pastikan email valid & password minimal 6 karakter.");
+        }
+      } else if (err.code === 'auth/wrong-password') {
+        setError("Password salah.");
+      } else if (err.code === 'auth/invalid-email') {
+        setError("Format email tidak valid.");
+      } else {
+        // Some other error, try to create user anyway if it's "tanpa daftar" logic
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          setShowLoginModal(false);
+          setPassword('');
+        } catch (finalErr: any) {
+          setError("Gagal masuk/daftar ke sistem.");
+        }
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => signOut(auth);
+
+  const saveExamToCloud = async () => {
+    if (!user || !generatedExam) return;
+    try {
+      setLoading(true);
+      
+      // Deteksi semester dari header (biasanya mengandung "GANJIL" atau "GENAP")
+      const semMatch = institutionHeader.match(/SEMESTER\s+(GANJIL|GENAP)/i);
+      const extractedSemester = semMatch ? semMatch[1].toUpperCase() : 'UTAMA';
+
+      const examData = {
+        ...generatedExam,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        subject,
+        grade,
+        level,
+        academicYear,
+        semester: extractedSemester,
+        examDate,
+        examDay,
+        topics,
+        // Nama identitas naskah sesuai permintaan user
+        displayName: `${subject} - Kelas ${grade} (${extractedSemester} ${academicYear})`
+      };
+      await addDoc(collection(db, 'exams'), examData);
+      await fetchExams();
+      setLoading(false);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'exams');
+    }
+  };
+
+  const deleteExam = async (examId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteDoc(doc(db, 'exams', examId));
+      setSavedExams(prev => prev.filter(ex => ex.id !== examId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `exams/${examId}`);
+    }
+  };
+
+  const loadExamFromSaved = (exam: any) => {
+    setGeneratedExam(exam);
+    setSubject(exam.subject || '');
+    setGrade(exam.grade || '');
+    setLevel(exam.level || 'MTs');
+    setAcademicYear(exam.academicYear || '');
+    setExamDate(exam.examDate || '');
+    setExamDay(exam.examDay || '');
+    setTopics(exam.topics || { topic1: '', topic2: '', topic3: '', topic4: '' });
+    setShowHistory(false);
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -390,16 +561,245 @@ const App = () => {
         )}
       </AnimatePresence>
 
-      <header className="flex items-center justify-center gap-3 mb-6">
-        <div className="bg-blue-600 p-2 rounded-lg shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg shadow-lg">
+              <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+              <h1 className="text-2xl font-bold text-slate-50 tracking-tight">MADRASAH DARUL HUDA</h1>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Professional Production Grade</p>
+              <p className="text-[9px] text-blue-400/80 uppercase tracking-wider font-bold mt-0.5">Developer: Ali Maksum</p>
+          </div>
         </div>
-        <div>
-            <h1 className="text-2xl font-bold text-slate-50 tracking-tight">MADRASAH DARUL HUDA</h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Professional Production Grade</p>
-            <p className="text-[9px] text-blue-400/80 uppercase tracking-wider font-bold mt-0.5">Developer: Ali Maksum</p>
+
+        <div className="flex items-center gap-4">
+          {user && (
+            <button 
+              onClick={() => setShowSavedDataModal(true)}
+              className="flex items-center gap-2 bg-slate-800 text-slate-300 px-4 py-2 rounded-full font-bold text-xs hover:bg-slate-700 transition-all border border-slate-700"
+            >
+              <Database className="w-4 h-4 text-blue-400" />
+              DATABASE
+            </button>
+          )}
+
+          {user ? (
+            <div className="flex items-center gap-3 bg-slate-900/50 p-1.5 pl-4 rounded-full border border-slate-700">
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-white leading-none">{user.email?.split('@')[0]}</p>
+                <p className="text-[8px] text-slate-500">{user.email}</p>
+              </div>
+              <button onClick={handleLogout} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-red-400 transition-colors">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-full font-bold text-xs hover:bg-blue-50 transition-colors shadow-lg">
+              <Lock className="w-4 h-4" />
+              MASUK SISTEM
+            </button>
+          )}
         </div>
       </header>
+
+      {/* Login Modal */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex flex-col items-center text-center mb-8">
+                <div className="bg-blue-600/20 p-4 rounded-2xl mb-4">
+                  <Lock className="w-8 h-8 text-blue-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Akses Sistem</h2>
+                <p className="text-slate-400 text-sm mt-1">Gunakan Email & Password untuk masuk</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Email Madrasah</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="contoh@madrasah.com"
+                      className="w-full bg-slate-800 border-slate-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input 
+                      type="password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Min. 6 karakter"
+                      className="w-full bg-slate-800 border-slate-700 rounded-xl py-3 pl-12 pr-4 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {error && <p className="text-red-400 text-[10px] text-center font-bold bg-red-400/10 py-2 rounded-lg border border-red-400/20">{error}</p>}
+
+                <button 
+                  type="submit" 
+                  disabled={authLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-sm shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2 transition-all mt-4"
+                >
+                  {authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><LogIn className="w-5 h-5" /> MASUK / DAFTAR</>}
+                </button>
+
+                <button 
+                  type="button" 
+                  onClick={() => setShowLoginModal(false)}
+                  className="w-full py-3 text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase tracking-widest transition-colors"
+                >
+                  Batal
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Saved Data Modal */}
+      <AnimatePresence>
+        {showSavedDataModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            >
+              <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-600/20 p-2.5 rounded-xl">
+                    <Database className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-tight">Database Naskah</h2>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Manajemen Data Tersimpan</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowSavedDataModal(false)}
+                  className="p-2 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-4 bg-slate-800/30 border-b border-slate-800">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Cari Mata Pelajaran atau Kelas..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                {savedExams.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <Database className="w-16 h-16 text-slate-800 mb-4" />
+                    <h3 className="text-slate-400 font-bold">Belum Ada Naskah</h3>
+                    <p className="text-slate-600 text-xs mt-1">Generate naskah dan simpan ke cloud untuk melihatnya di sini.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {savedExams
+                      .filter(ex => 
+                        ex.subject?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        ex.grade?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        ex.displayName?.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map((ex) => (
+                      <motion.div 
+                        key={ex.id}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="group relative bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-slate-800 transition-all cursor-pointer shadow-lg overflow-hidden"
+                        onClick={() => {
+                          loadExamFromSaved(ex);
+                          setShowSavedDataModal(false);
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="px-2.5 py-1 rounded-md bg-blue-600/10 border border-blue-600/20 text-[9px] font-bold text-blue-400 uppercase tracking-wider inline-block w-fit">
+                              {ex.level} {ex.grade}
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-0.5">
+                              {ex.semester || 'SESI'} {ex.academicYear}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {ex.createdAt?.toDate ? new Date(ex.createdAt.toDate()).toLocaleDateString('id-ID') : 'Baru saja'}
+                          </div>
+                        </div>
+                        
+                        <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
+                          {ex.subject}
+                        </h4>
+                        
+                        <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Ready to Load</span>
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if(confirm('Hapus naskah ini?')) deleteExam(ex.id, e);
+                            }}
+                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 bg-slate-900 border-t border-slate-800 text-center">
+                <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Total: {savedExams.length} Naskah Tersimpan</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="main-grid">
         {/* Sidebar */}
@@ -590,10 +990,55 @@ const App = () => {
             </div>
           </div>
 
+          <div className="pt-4 mt-8 border-t border-slate-800/50">
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-700 bg-slate-900/30 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs font-bold"
+              >
+                <History className="w-4 h-4" />
+                Riwayat Naskah ({savedExams.length})
+              </button>
+              
+              {showHistory && (
+                <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {savedExams.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 text-center py-4 italic">Belum ada naskah tersimpan</p>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      {savedExams.map((ex) => (
+                        <div 
+                          key={ex.id} 
+                          onClick={() => loadExamFromSaved(ex)}
+                          className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800 cursor-pointer group text-[10px]"
+                        >
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-slate-300 font-bold truncate">{ex.subject}</p>
+                            <p className="text-slate-500 truncate">{ex.level} {ex.grade} - {ex.academicYear}</p>
+                          </div>
+                          <button 
+                            onClick={(e) => deleteExam(ex.id, e)}
+                            className="p-1.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="pt-4 mt-auto border-t border-slate-700">
-            <button onClick={handleGenerate} disabled={loading} className="btn-generate w-full">
+            <button 
+              onClick={handleGenerate} 
+              disabled={loading || !user} 
+              className={`btn-generate w-full ${!user ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+            >
               {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
-              Generate Naskah Produksi
+              {user ? 'Generate Naskah Produksi' : 'Silakan Login Terlebih Dahulu'}
             </button>
             {error && <p className="text-red-400 text-[10px] mt-2 text-center">{error}</p>}
           </div>
@@ -825,7 +1270,15 @@ const App = () => {
           </div>
           
           {generatedExam && (
-            <div className="absolute bottom-8 right-8">
+            <div className="absolute bottom-8 right-8 flex gap-3">
+                {user && (
+                  <button 
+                    onClick={saveExamToCloud} 
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-xl border border-slate-700"
+                  >
+                    <Save className="w-5 h-5" /> Simpan ke Cloud
+                  </button>
+                )}
                 <button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-xl">
                   <Printer className="w-5 h-5" /> Cetak / Simpan PDF
                 </button>

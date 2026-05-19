@@ -1,6 +1,6 @@
 {
   "name": "MTs-MA DARUL HUDA",
-  "description": "A tool to generate Madrasah exam questions using AI, supporting multiple levels (MTs/MA) and question types (HOTS, Sedang, LOTS).",
+  "description": "Generator naskah soal Madrasah (MTs/MA) cerdas dengan integrasi Firebase untuk penyimpanan cloud, mendukung soal HOTS, visual SVG otomatis, dan format naskah siap cetak.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

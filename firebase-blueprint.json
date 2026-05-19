@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "Exam": {
+      "title": "Exam",
+      "description": "A generated exam script including questions, key, and metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "subject": { "type": "string" },
+        "level": { "type": "string" },
+        "grade": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "examDate": { "type": "string" },
+        "examDay": { "type": "string" },
+        "topics": { "type": "object" },
+        "kop": { "type": "object" },
+        "pilihan_ganda": { "type": "array" },
+        "salah_benar": { "type": "array" },
+        "menjodohkan": { "type": "object" },
+        "essay": { "type": "array" },
+        "kisi_kisi": { "type": "array" },
+        "kunci_jawaban": { "type": "object" }
+      },
+      "required": ["userId", "createdAt", "subject"]
+    }
+  },
+  "firestore": {
+    "exams/{examId}": {
+      "schema": "Exam",
+      "description": "Collection of generated exams."
+    }
+  }
+}

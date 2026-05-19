@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitive Definition
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 2. Validation Blueprints
+    function isValidExam(data) {
+      return data.userId == request.auth.uid
+        && data.subject is string && data.subject.size() <= 200
+        && (data.createdAt is timestamp || data.createdAt is string) // Handle potential conversion issues if any, but skill says use server timestamp
+        && data.keys().hasAll(['userId', 'createdAt', 'subject'])
+        && data.keys().size() >= 3;
+    }
+
+    // 4. Match Blocks
+    match /exams/{examId} {
+      // Allow getting a specific document if it belongs to the user
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Allow listing if the query is filtered by the user's ID
+      // Firestore enforces that the query filter MUST match the rule filter
+      allow list: if isSignedIn() && request.query.limit <= 100;
+
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+
+      allow update: if isSignedIn()
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt;
+
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}
