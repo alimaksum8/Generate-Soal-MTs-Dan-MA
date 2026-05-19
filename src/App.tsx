@@ -452,16 +452,16 @@ const App = () => {
                   </select>
               </div>
 
-              <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mata Pelajaran" className="input-field font-bold" />
+              <input type="text" value={subject} onChange={(e) => setSubject(e.target.value.toUpperCase())} placeholder="Mata Pelajaran" className="input-field font-bold" />
               
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" value={examDay} onChange={(e) => setExamDay(e.target.value)} placeholder="Hari" className="input-field" />
+                <input type="text" value={examDay} onChange={(e) => setExamDay(e.target.value.toUpperCase())} placeholder="Hari" className="input-field" />
                 <input type="text" value={examDate} onChange={(e) => setExamDate(e.target.value)} placeholder="Tanggal" className="input-field" />
               </div>
 
               <div className="space-y-1.5">
                   {[1, 2, 3, 4].map(n => (
-                  <input key={n} type="text" value={(topics as any)[`topic${n}`]} onChange={(e) => handleTopicChange(`topic${n}`, e.target.value)} placeholder={`Materi Utama ${n}`} className="input-field text-[11px]" />
+                  <input key={n} type="text" value={(topics as any)[`topic${n}`]} onChange={(e) => handleTopicChange(`topic${n}`, e.target.value.toUpperCase())} placeholder={`Materi Utama ${n}`} className="input-field text-[11px]" />
                   ))}
               </div>
             </div>

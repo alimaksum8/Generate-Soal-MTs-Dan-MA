@@ -36,7 +36,11 @@
   }
 
   .paper-content {
-    @apply bg-white p-6 lg:p-10 border border-slate-200 font-serif shadow-2xl w-full;
+    @apply bg-white border border-slate-200 font-serif shadow-2xl mx-auto;
+    width: 210mm;
+    max-width: 100%;
+    min-height: 330mm;
+    padding: 1.5cm;
   }
 
   .input-field {
@@ -91,7 +95,7 @@
 @media print {
   @page {
     margin: 1.5cm;
-    size: A4;
+    size: 210mm 330mm;
   }
 
   body {
