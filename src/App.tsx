@@ -33,7 +33,8 @@ import {
   Search,
   X,
   Plus,
-  Minus
+  Minus,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
@@ -68,6 +69,8 @@ const App = () => {
   const [password, setPassword] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSavedDataModal, setShowSavedDataModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [savedExams, setSavedExams] = useState<any[]>([]);
@@ -101,7 +104,7 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [hideKop, setHideKop] = useState(false);
   const [useStimulus, setUseStimulus] = useState(false);
-  const [useVisuals, setUseVisuals] = useState(true);
+  const [useVisuals, setUseVisuals] = useState(false);
   const [hotsLevels, setHotsLevels] = useState<string[]>(['C4', 'C5', 'C6']);
   const [sedangLevels, setSedangLevels] = useState<string[]>(['C2', 'C3']);
 
@@ -286,42 +289,6 @@ const App = () => {
     setExamDay(exam.examDay || '');
     setTopics(Array.isArray(exam.topics) ? exam.topics : ['']);
     setShowHistory(false);
-  };
-
-  const updateExamHeader = async (examId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const semMatch = institutionHeader.match(/SEMESTER\s+(GANJIL|GENAP)/i);
-      const extractedSemester = semMatch ? semMatch[1].toUpperCase() : 'UTAMA';
-
-      const updateData = {
-        institutionHeader,
-        academicYear,
-        semester: extractedSemester,
-        subject,
-        grade,
-        level,
-        examDate,
-        examDay,
-        displayName: `${subject} - Kelas ${grade} (${extractedSemester} ${academicYear})`,
-        updatedAt: serverTimestamp()
-      };
-
-      await updateDoc(doc(db, 'exams', examId), updateData);
-      
-      setSavedExams(prev => prev.map(ex => 
-        ex.id === examId ? { ...ex, ...updateData } : ex
-      ));
-      
-      setLoading(false);
-      alert('Kop/Header naskah berhasil diperbarui!');
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `exams/${examId}`);
-      setLoading(false);
-    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -829,17 +796,10 @@ const App = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <button 
-                              onClick={(e) => updateExamHeader(ex.id, e)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-400/10 text-orange-400 hover:bg-orange-400/20 border border-orange-400/20 transition-all text-[9px] font-bold uppercase"
-                              title="Update Header/Kop dengan data form saat ini"
-                            >
-                              <Settings className="w-3.5 h-3.5" />
-                              Update Kop
-                            </button>
-                            <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if(confirm('Hapus naskah ini?')) deleteExam(ex.id, e);
+                                setExamToDelete(ex.id);
+                                setShowDeleteConfirm(true);
                               }}
                               className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
                             >
@@ -855,6 +815,66 @@ const App = () => {
               
               <div className="p-4 bg-slate-900 border-t border-slate-800 text-center">
                 <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Total: {savedExams.length} Naskah Tersimpan</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl shadow-red-500/10"
+            >
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white tracking-tight">Hapus Naskah?</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed px-4">
+                    Tindakan ini tidak dapat dibatalkan. Naskah akan dihapus secara permanen dari database.
+                  </p>
+                </div>
+
+                <div className="flex w-full gap-3 pt-2">
+                  <button 
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setExamToDelete(null);
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl bg-slate-800 text-slate-300 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-750 transition-all border border-slate-700/50"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={async (e) => {
+                      if (examToDelete) {
+                        try {
+                          await deleteExam(examToDelete, e as any);
+                          setShowDeleteConfirm(false);
+                          setExamToDelete(null);
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg shadow-red-600/30"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
