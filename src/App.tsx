@@ -33,7 +33,7 @@ const MODEL_NAME = "gemini-3-flash-preview";
 const App = () => {
   const [level, setLevel] = useState('MTs');
   const [academicYear, setAcademicYear] = useState('2024/2025');
-  const [institutionHeader, setInstitutionHeader] = useState('KEMENTERIAN AGAMA REPUBLIK INDONESIA');
+  const [institutionHeader, setInstitutionHeader] = useState('ASESMEN MADRASAH SEMESTER');
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
   const [examDay, setExamDay] = useState('');
@@ -65,29 +65,50 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [hideKop, setHideKop] = useState(false);
   const [useStimulus, setUseStimulus] = useState(false);
+  const [useVisuals, setUseVisuals] = useState(true);
   const [hotsLevels, setHotsLevels] = useState<string[]>(['C4', 'C5', 'C6']);
   const [sedangLevels, setSedangLevels] = useState<string[]>(['C2', 'C3']);
 
   const renderVisual = (visual: any) => {
     if (!visual) return null;
-    if (visual.type === 'svg') {
-      let svgContent = visual.content || '';
+    
+    // Normalize properties
+    const type = String(visual.type || '').toLowerCase();
+    let content = visual.content || visual.svg || visual.data || visual.url || visual.src || '';
+
+    if (type === 'svg') {
       // Cleanup markdown if AI wraps it
-      svgContent = svgContent.replace(/```svg/g, '').replace(/```/g, '').trim();
+      content = content.replace(/```svg/g, '').replace(/```xml/g, '').replace(/```/g, '').trim();
+      
+      // Auto-wrap if missing <svg tag or if it seems to be just path/inner content
+      const needsWrap = !content.includes('<svg');
       
       return (
         <div 
-          className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[120px] max-h-[250px]"
-          dangerouslySetInnerHTML={{ __html: svgContent.includes('<svg') ? svgContent : `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>` }}
+          className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden min-h-[80px] max-h-[160px]"
+          dangerouslySetInnerHTML={{ 
+            __html: needsWrap 
+              ? `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%; max-height:140px;">${content}</svg>` 
+              : content.replace('<svg', '<svg style="max-height:140px;"') 
+          }}
         />
       );
     }
-    if (visual.type === 'placeholder') {
+
+    if (type === 'image' || type === 'url' || (content.startsWith('http') || content.startsWith('data:image'))) {
       return (
-        <div className="my-3 border-2 border-dashed border-black/20 bg-slate-50 p-4 flex flex-col items-center justify-center gap-2 text-center rounded-sm">
+        <div className="my-3 flex justify-center bg-white p-2 border border-black/10 rounded-sm overflow-hidden">
+          <img src={content} alt="Ilustrasi" className="max-h-[160px] object-contain" referrerPolicy="no-referrer" />
+        </div>
+      );
+    }
+    
+    if (type === 'placeholder' || !type) {
+      return (
+        <div className="my-3 border-2 border-dashed border-black/20 bg-slate-50 p-4 flex flex-col items-center justify-center gap-2 text-center rounded-sm min-h-[100px]">
           <ImageIcon className="w-6 h-6 text-slate-300" />
           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Area Gambar / Ilustrasi</p>
-          <p className="text-[8px] text-slate-400 italic max-w-[200px] leading-tight">{visual.content}</p>
+          <p className="text-[8px] text-slate-400 italic max-w-[250px] leading-tight">{content || 'Gambar tidak tersedia'}</p>
         </div>
       );
     }
@@ -144,7 +165,7 @@ const App = () => {
           "no": 1, 
           "tipe": "HOTS", 
           "stimulus": "...", 
-          "visual": { "type": "svg|placeholder", "content": "..." },
+          "visual": { "type": "svg", "content": "<svg>...</svg>" },
           "pertanyaan": "...", 
           "opsi": {"a": "", "b": "", "c": "", "d": "" ${isMA ? ', "e": ""' : ''}}, 
           "kunci": "a"
@@ -155,7 +176,7 @@ const App = () => {
     if (enabledTypes.salahBenar) {
       outputFormat += `,
       "salah_benar": [
-        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "...", "kunci": "Benar" }
+        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "visual": null, "pertanyaan": "...", "kunci": "Benar" }
       ]`;
     }
 
@@ -163,7 +184,7 @@ const App = () => {
       outputFormat += `,
       "menjodohkan": {
         "soal": [
-          { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "...", "kunci": "..." }
+          { "no": 1, "tipe": "Dasar/Sedang/HOTS", "visual": null, "pertanyaan": "...", "kunci": "..." }
         ],
         "pilihan_jawaban": ["...", "...", "..."]
       }`;
@@ -172,7 +193,7 @@ const App = () => {
     if (enabledTypes.essay) {
       outputFormat += `,
       "essay": [
-        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "pertanyaan": "..." }
+        { "no": 1, "tipe": "Dasar/Sedang/HOTS", "visual": null, "pertanyaan": "..." }
       ]`;
     }
 
@@ -195,13 +216,19 @@ const App = () => {
     3. HOTS (Higher Order Thinking Skills): Harus memiliki stimulus (teks/kasus/data) dan mengukur kemampuan analisis/evaluasi.
     4. Pilihan Ganda: Jenjang MA memiliki 5 opsi (A-E), MTs memiliki 4 opsi (A-D).
     5. Stimulus: ${useStimulus ? 'WAJIB sertakan stimulus (teks, kutipan, atau konteks) untuk setiap butir soal jika memungkinkan.' : 'JANGAN gunakan stimulus. Langsung ke pertanyaan inti.'}
-    6. Visual (OPSIONAL): Jika soal membutuhkan ilustrasi (misal: grafik, diagram, peta, lambang, kaligrafi, atau gambar tokoh), sertakan field "visual". 
-       - Gunakan type "svg" untuk: diagram geometri (kubus, bola, jaring-jaring), grafik fungsi (linear, kuadrat, dll), diagram kartesius, bagan alir, atau silsilah.
-         * WAJIB: Jangan gunakan "placeholder" untuk grafik matematika sederharna. Buatlah SVG-nya.
-         * WAJIB: Gunakan stroke="black", stroke-width="1", dan fill="none" (atau warna sangat muda).
-         * WAJIB: Sertakan viewBox agar responsif (misal: viewBox="0 0 200 200").
-       - Gunakan type "placeholder" HANYA untuk gambar yang tidak mungkin dibuat dengan SVG sederhana (misal: "Foto Sejarah", "Peta dunia detail", "Wajah tokoh", "Pemandangan alama"), sertakan deskripsi gambar di "content". 
-       - Upayakan menyertakan visual pada minimal 2-3 nomor soal (terutama HOTS) untuk semua mata pelajaran agar naskah lebih interaktif.`;
+    6. Visual: ${useVisuals ? `Anda WAJIB menyertakan minimal 3-5 visual SVG yang relevan di seluruh naskah (misal: pada soal HOTS).
+       - HANYA gunakan type "svg". DILARANG menggunakan "placeholder".
+       - Jika pertanyaan atau stimulus mengandung kata-kata seperti "amati gambar", "perhatikan gambar", "berdasarkan ilustrasi", "lihatlah diagram", atau sejenisnya, maka Anda WAJIB menyertakan objek "visual" berisi SVG yang relevan dengan pertanyaan tersebut.
+       - Jika materi tidak memiliki diagram standar (seperti matematika), buatlah ilustrasi SVG kreatif yang relevan:
+         * Contoh Sejarah: Simbol/ikon artefak, peta sederhana, pilar, atau timbangan keadilan.
+         * Contoh Agama: Kaligrafi sederhana, simbol tempat ibadah (masjid/ka'bah), atau ikon silsilah.
+         * Contoh IPA/Biologi: Struktur sel, rantai makanan, atau simbol atom.
+         * Contoh Bahasa: Ikon buku, pulpen, atau balon teks dialog.
+       - Tehnical SVG:
+         * Gunakan stroke="black", stroke-width="1.5", dan fill="none" (atau warna pastel sangat muda).
+         * WAJIB sertakan viewBox (misal: viewBox="0 0 200 200").
+         * Ukuran visual harus kompak (preferensi aspek rasio 1:1 atau 2:2) agar tidak memakan banyak tempat.
+         * Pastikan SVG bersih dan valid.` : 'DILARANG KERAS menyertakan visual, gambar, SVG, atau ilustrasi dalam bentuk apapun. Jangan sertakan field "visual" dalam JSON.'}`;
 
     let countsText = `PENTING: `;
     const countsParts = [];
@@ -215,7 +242,7 @@ const App = () => {
     const hotsLevelsText = hotsLevels.length > 0 ? `dengan level kognitif ${hotsLevels.join('/')}` : '';
     const sedangLevelsText = sedangLevels.length > 0 ? `dengan level kognitif ${sedangLevels.join('/')}` : '';
 
-    const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (Kementerian Agama RI). 
+    const systemPrompt = `Anda adalah pakar kurikulum dan pembuat soal ujian profesional untuk lingkungan Madrasah (ASESMEN MADRASAH SEMESTER). 
     Tugas Anda adalah membuat naskah soal, kisi-kisi, dan kunci jawaban yang berkualitas tinggi, valid, dan reliabel sesuai dengan standar Kurikulum Merdeka dan K-13.
 
     ${criteria}
@@ -442,15 +469,26 @@ const App = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Parameter Soal</p>
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 transition-colors font-medium text-[10px]">
-                  <input 
-                    type="checkbox" 
-                    checked={useStimulus} 
-                    onChange={(e) => setUseStimulus(e.target.checked)}
-                    className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
-                  />
-                  Gunakan Stimulus
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 transition-colors font-medium text-[10px]">
+                    <input 
+                      type="checkbox" 
+                      checked={useVisuals} 
+                      onChange={(e) => setUseVisuals(e.target.checked)}
+                      className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
+                    />
+                    Gambar
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 transition-colors font-medium text-[10px]">
+                    <input 
+                      type="checkbox" 
+                      checked={useStimulus} 
+                      onChange={(e) => setUseStimulus(e.target.checked)}
+                      className="w-3 h-3 rounded-sm bg-slate-800 border-slate-600 text-blue-500 focus:ring-0"
+                    />
+                    Stimulus
+                  </label>
+                </div>
               </div>
               <div className="stats-card">
                 <div className="stat-row text-blue-400">
