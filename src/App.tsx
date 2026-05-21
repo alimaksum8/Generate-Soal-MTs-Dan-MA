@@ -39,8 +39,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut,
   User as FirebaseUser 
@@ -207,28 +206,14 @@ const App = () => {
       setShowLoginModal(false);
       setPassword('');
     } catch (err: any) {
-      // If user doesn't exist, auto-register (tanpa daftar)
-      if (err.code === 'auth/user-not-found') {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-          setShowLoginModal(false);
-          setPassword('');
-        } catch (createErr: any) {
-          setError("Gagal masuk. Pastikan email valid & password minimal 6 karakter.");
-        }
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        setError("Akun tidak terdaftar atau email/password salah. Hubungi Administrator.");
       } else if (err.code === 'auth/wrong-password') {
         setError("Password salah.");
       } else if (err.code === 'auth/invalid-email') {
         setError("Format email tidak valid.");
       } else {
-        // Some other error, try to create user anyway if it's "tanpa daftar" logic
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-          setShowLoginModal(false);
-          setPassword('');
-        } catch (finalErr: any) {
-          setError("Gagal masuk/daftar ke sistem.");
-        }
+        setError("Gagal masuk ke sistem. Silakan periksa kredensial Anda.");
       }
     } finally {
       setAuthLoading(false);
